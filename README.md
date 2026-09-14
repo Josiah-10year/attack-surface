@@ -1,8 +1,11 @@
-# Firewall vs. Malware
+# Attack Surface
 
 A browser-based tower-defense game that teaches **defense in depth**. Eight security
 controls, eight attack vectors, fifteen waves — and a built-in playbook explaining why
 placement and layering matter more than raw firepower.
+
+Your attack surface is not what you own — it is every path an attacker can take to
+reach it. This game makes you defend five of them at once, nine layers deep.
 
 ## Play
 
