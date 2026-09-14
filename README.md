@@ -36,6 +36,18 @@ APT kill chain.
 Each threat triggers a one-time intel briefing on first contact, and the in-game
 playbook (`H`) documents every control, threat, and placement rule.
 
+## On phones
+
+The board is a 5-lane x 9-column grid. Below 560px the layout **transposes**: lanes
+run up the screen instead of across, giving a 366x662 portrait board that fits a
+phone at near-full size rather than being scaled down to ~35px cells. Game logic is
+untouched -- only the projection changes, and the board re-projects live if you
+rotate mid-game. Hotkey labels hide themselves on touch devices.
+
+First-time players get a short briefing explaining the goal, the economy, and their
+first two moves, plus a hint bar that tracks those placements. It is dismissible,
+remembered in `localStorage`, and replayable from **HOW TO PLAY**.
+
 ## Controls
 
 | Key | Action |

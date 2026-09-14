@@ -125,8 +125,8 @@
   #playbook code{background:#12203a;padding:1px 4px;border-radius:3px;font-size:.95em;}
 
   /* ---------- threat intel briefing ---------- */
-  #intel{position:absolute;inset:0;display:none;justify-content:center;align-items:center;
-    background:rgba(2,6,23,.93);z-index:12;padding:14px;}
+  #intel{position:fixed;inset:0;display:none;justify-content:center;align-items:center;
+    background:rgba(2,6,23,.93);z-index:12;padding:14px;overflow-y:auto;}
   #intel .box{width:100%;max-width:520px;background:#0a1120;border:1px solid var(--red);
     border-radius:8px;padding:14px 16px;box-shadow:0 0 34px rgba(248,113,113,.25);}
   #intel .top{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px;}
@@ -147,7 +147,53 @@
   #intel .hintline{font-size:.55rem;color:var(--dim);letter-spacing:.05em;}
   #playbook .seen{color:var(--ram);font-size:.9em;}
 
-  @media (max-width:520px){ #cards{grid-template-columns:repeat(3,1fr);} }
+  /* ---------- onboarding ---------- */
+  #tut{position:fixed;inset:0;display:none;justify-content:center;align-items:center;
+    background:rgba(2,6,23,.95);z-index:14;padding:14px;overflow-y:auto;}
+  #tut .box{width:100%;max-width:470px;background:#0a1120;border:1px solid var(--cyan);
+    border-radius:8px;padding:15px 16px;box-shadow:0 0 34px rgba(56,189,248,.22);}
+  #tut .eyebrow{font-size:.55rem;letter-spacing:.22em;color:var(--cyan);text-transform:uppercase;}
+  #tut h4{margin:3px 0 11px;font-size:1.05rem;letter-spacing:.12em;}
+  #tut .step{display:flex;gap:10px;margin-bottom:9px;align-items:flex-start;}
+  #tut .n{flex:0 0 19px;height:19px;border-radius:50%;background:var(--cyan);color:#04121c;
+    font-size:.6rem;font-weight:800;display:flex;justify-content:center;align-items:center;margin-top:1px;}
+  #tut .tx{font-size:.67rem;line-height:1.65;color:#c2d1e5;}
+  #tut .tx b{color:var(--ink);}
+  #tut .first{margin-top:11px;border-left:2px solid var(--ram);background:#0c1a12;
+    padding:8px 10px;font-size:.65rem;line-height:1.6;color:#d6ecdb;border-radius:0 4px 4px 0;}
+  #tut .foot{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap;}
+  #tut .go{border-color:var(--ram);color:var(--ram);font-size:.72rem;padding:8px 15px;}
+
+  #hint{display:none;background:#0c1a12;border:1px solid #1d3a28;border-radius:6px;
+    padding:7px 9px;margin-bottom:8px;font-size:.64rem;letter-spacing:.03em;color:#a7d8ba;line-height:1.55;}
+  #hint b{color:var(--ram);}
+
+  /* ---------- touch / portrait ---------- */
+  .cell,.card,.token,.btn,.def{touch-action:manipulation;}
+  body.touch .kb{display:none;}
+  body.touch .card .hk{display:none;}
+  #board.portrait .rail{width:70px;height:4px;}
+  #board.portrait .token{width:30px;height:30px;font-size:.56rem;}
+
+  @media (max-width:640px){
+    body{padding:10px 8px 26px;}
+    h1{font-size:.95rem;letter-spacing:.16em;}
+    .sub{font-size:.57rem;margin-bottom:9px;}
+    #shell{padding:9px;border-radius:8px;}
+    #hud{padding:7px 8px;gap:6px;}
+    .stat{font-size:.69rem;}
+    #phase{width:100%;order:9;}
+    .btns{width:100%;order:10;}
+    .btn{font-size:.62rem;padding:7px 9px;flex:1 1 auto;}
+    #cards{grid-template-columns:repeat(4,1fr);gap:5px;}
+    .card .nm{font-size:.53rem;}
+    .card .fam{display:none;}
+    .card svg{width:18px;height:18px;}
+    #tip{font-size:.58rem;}
+    #playbook{padding:12px;font-size:.66rem;}
+    #playbook table{font-size:.6rem;}
+  }
+  @media (max-width:380px){ #cards{grid-template-columns:repeat(3,1fr);} }
   @media (prefers-reduced-motion: reduce){ .token{animation:none} }
 </style>
 </head>
@@ -162,24 +208,30 @@
     <div class="stat">WAVE <b id="wavev">0</b>/15</div>
     <div id="phase">BUILD PHASE — 20s</div>
     <div class="btns">
-      <button class="btn" id="sellbtn">SELL [S]</button>
-      <button class="btn" id="pausebtn">PAUSE [P]</button>
+      <button class="btn" id="helpbtn">HOW TO PLAY</button>
+      <button class="btn" id="sellbtn">SELL<span class="kb"> [S]</span></button>
+      <button class="btn" id="pausebtn">PAUSE<span class="kb"> [P]</span></button>
       <button class="btn" id="mutebtn">SOUND ON</button>
-      <button class="btn" id="pbbtn">PLAYBOOK [H]</button>
+      <button class="btn" id="pbbtn">PLAYBOOK<span class="kb"> [H]</span></button>
       <button class="btn" id="brbtn">BRIEFINGS ON</button>
     </div>
   </div>
 
+  <div id="hint"></div>
+
   <div id="cards"></div>
 
   <div id="stage"><div id="boardwrap"><div id="board">
-    <div id="banner"></div><div id="intel"></div><div id="over"></div>
+    <div id="banner"></div><div id="over"></div>
   </div></div></div>
 
-  <div id="tip">Click a card, then a tile · click RAM tokens to collect · a <span style="color:#f87171">red-flagged control is compromised — click it to remediate</span> · each lane holds one auto-remediation charge</div>
+  <div id="tip">Tap a card, then a tile · tap RAM tokens to collect · a <span style="color:#f87171">red-flagged control is compromised — tap it to remediate</span> · each lane holds one auto-remediation charge</div>
 
   <div id="playbook"></div>
 </div>
+
+<div id="intel"></div>
+<div id="tut"></div>
 
 <script>
 (() => {
@@ -316,13 +368,15 @@ function buildBoard(){
     for(let c=0;c<COLS;c++){
       const d=document.createElement('div');
       d.className='cell'+((r+c)%2?' alt':'');
-      d.style.transform=`translate3d(${c*PITCH}px,${r*PITCH}px,0)`;
+      d.dataset.r=r; d.dataset.c=c;
+      place(d,c*PITCH,r*PITCH);
       d.addEventListener('click',()=>cellClick(r,c));
       board.appendChild(d);
     }
     const rail=document.createElement('div');
     rail.className='rail';
-    rail.style.transform=`translate3d(0,${r*PITCH}px,0)`;
+    rail.dataset.r=r;
+    place(rail,0,r*PITCH);
     board.appendChild(rail);
     rails[r]={el:rail,armed:true};
   }
@@ -344,7 +398,14 @@ function buildCards(){
 /* ══════════════ helpers ══════════════ */
 const now=()=>performance.now()/1000;
 const cellX=c=>c*PITCH+OFF, cellY=r=>r*PITCH+OFF;
-const place=(el,x,y)=>{el.style.transform=`translate3d(${x}px,${y}px,0)`;};
+/* Portrait transposes the board: logical x (progress along a lane) becomes screen Y,
+   logical y (which lane) becomes screen X. Game logic never changes — only the
+   projection — so a 662x366 landscape board becomes a 366x662 portrait one that
+   fits a phone at full cell size instead of being scaled down to ~35px cells. */
+let PORTRAIT=false;
+const place=(el,x,y)=>{
+  el.style.transform=PORTRAIT?`translate3d(${y}px,${x}px,0)`:`translate3d(${x}px,${y}px,0)`;
+};
 const setHP=e=>{e.bar.style.width=Math.max(0,e.hp/e.maxHp*100)+'%';};
 function hitFx(a){a.el.classList.add('hit');setTimeout(()=>a.el.classList.remove('hit'),60);}
 const rowHas=(r,type)=>defenders.some(d=>d.row===r&&d.type===type&&d.lockUntil<now()&&!d.owned);
@@ -379,7 +440,7 @@ function cellClick(r,c){
   place(el,cellX(c),cellY(r)); board.appendChild(el);
   defenders.push({type:selected,row:r,col:c,x:cellX(c),y:cellY(r),hp:d.hp,maxHp:d.hp,
     el,bar:el.querySelector('.hp i'),t:0,lockUntil:0,owned:false});
-  beep(520,.06,'triangle'); selected=null; updHUD(); refreshCards();
+  beep(520,.06,'triangle'); selected=null; updHUD(); refreshCards(); updHint();
 }
 function removeDefender(d){ d.el.remove(); const i=defenders.indexOf(d); if(i>-1) defenders.splice(i,1); }
 
@@ -388,7 +449,7 @@ function dropToken(x,y){
   const el=document.createElement('div');
   el.className='token'; el.textContent='RAM';
   place(el,x,y); board.appendChild(el);
-  const t={el,born:now()};
+  const t={el,x,y,born:now()};
   el.addEventListener('click',e=>{
     e.stopPropagation(); ram+=TOKEN_VALUE; stats.ramEarned+=TOKEN_VALUE; beep(880,.07,'sine');
     el.remove(); const i=tokens.indexOf(t); if(i>-1) tokens.splice(i,1); updHUD(); refreshCards();
@@ -635,6 +696,56 @@ function closeIntel(){
   if(intelPaused){ intelPaused=false; if(paused) togglePause(); }
 }
 
+/* ══════════════ onboarding ══════════════ */
+let tutOpen=false,tutPaused=false;
+const TUT_KEY='attacksurface.onboarded.v1';
+function seenTut(){ try{ return localStorage.getItem(TUT_KEY)==='1'; }catch(e){ return false; } }
+function markTut(){ try{ localStorage.setItem(TUT_KEY,'1'); }catch(e){} }
+
+function showTut(reproject){
+  const el=document.getElementById('tut');
+  if(!reproject){
+    tutOpen=true;
+    if(!paused&&!ended){ tutPaused=true; togglePause(); }
+  }
+  const from=PORTRAIT?'climb from the bottom of the board':'advance from the right edge';
+  const zone=PORTRAIT?'the top rows':'the left-hand columns';
+  el.innerHTML=`<div class="box">
+    <div class="eyebrow">Briefing &#183; before you start</div>
+    <h4>ATTACK SURFACE</h4>
+    <div class="step"><div class="n">1</div><div class="tx">Five lanes are five <b>attack paths</b>. Threats ${from} and try to reach the far end. Each lane absorbs <b>one</b> breach; the second one ends the run.</div></div>
+    <div class="step"><div class="n">2</div><div class="tx">Tap a <b>card</b>, then tap a <b>tile</b> to install a control. Every card costs RAM and recharges on its own timer, so you are limited by time as much as money.</div></div>
+    <div class="step"><div class="n">3</div><div class="tx"><b>Compute Nodes</b> are what you are defending and also how you earn — they drop RAM tokens. <b>Tap tokens to collect them</b> before they expire.</div></div>
+    <div class="step"><div class="n">4</div><div class="tx">Fifteen waves. Each new threat pauses the game with a <b>briefing</b> telling you what counters it, and the <b>playbook</b> keeps every detail for later.</div></div>
+    <div class="first"><b>First move:</b> put a Compute Node in ${zone}, then a Firewall further along the same lane. Nodes earn, Firewalls are your only damage. You have 500 RAM and 20 seconds.</div>
+    <div class="foot">
+      <button class="btn go" id="tutgo">START BUILDING</button>
+      <button class="btn" id="tutpb">READ THE PLAYBOOK</button>
+    </div>
+  </div>`;
+  el.style.display='flex';
+  document.getElementById('tutgo').addEventListener('click',closeTut);
+  document.getElementById('tutpb').addEventListener('click',()=>{ closeTut(); togglePlaybook(); });
+}
+function closeTut(){
+  document.getElementById('tut').style.display='none';
+  tutOpen=false; markTut();
+  if(tutPaused){ tutPaused=false; if(paused) togglePause(); }
+  updHint();
+}
+/* Contextual nudge during the opening build phase only. */
+function updHint(){
+  const h=document.getElementById('hint');
+  if(ended||wave>0||tutOpen){ h.style.display='none'; return; }
+  const nSrv=defenders.filter(d=>d.type==='srv').length;
+  const nFw=defenders.filter(d=>d.type==='fw').length;
+  let msg;
+  if(!nSrv) msg='<b>Step 1</b> — tap the <b>Compute Node</b> card, then a tile at your end of a lane. Nodes drop the RAM everything else is paid for with.';
+  else if(!nFw) msg='<b>Step 2</b> — tap <b>Firewall</b>, then a tile further along that same lane. It fires down the whole lane, so it does not need to be at the front.';
+  else msg='<b>You are set up.</b> Tap RAM tokens to collect them, and spend the breather between waves reinforcing — the threat budget grows every wave.';
+  h.innerHTML=msg; h.style.display='block';
+}
+
 /* ══════════════ HUD ══════════════ */
 function updHUD(){
   document.getElementById('ramv').textContent=Math.floor(ram);
@@ -681,8 +792,8 @@ function reset(){
   ORDER.forEach(k=>cooldowns[k]=0);
   overEl.style.display='none';
   document.getElementById('sellbtn').classList.remove('on');
-  document.getElementById('pausebtn').textContent='PAUSE [P]';
-  buildBoard(); updHUD(); refreshCards(); last=0;
+  document.getElementById('pausebtn').innerHTML='PAUSE<span class="kb"> [P]</span>';
+  buildBoard(); updHUD(); refreshCards(); updHint(); last=0;
   if(!raf) raf=requestAnimationFrame(tick);
 }
 
@@ -690,7 +801,8 @@ function reset(){
 function togglePause(){
   if(ended) return;
   paused=!paused; last=0;
-  document.getElementById('pausebtn').textContent=paused?'RESUME [P]':'PAUSE [P]';
+  document.getElementById('pausebtn').innerHTML=
+    (paused?'RESUME':'PAUSE')+'<span class="kb"> [P]</span>';
 }
 function togglePlaybook(){
   const el=document.getElementById('playbook');
@@ -701,6 +813,7 @@ function togglePlaybook(){
 }
 document.getElementById('pausebtn').addEventListener('click',togglePause);
 document.getElementById('sellbtn').addEventListener('click',toggleSell);
+document.getElementById('helpbtn').addEventListener('click',()=>{ if(!tutOpen) showTut(); });
 document.getElementById('pbbtn').addEventListener('click',togglePlaybook);
 document.getElementById('mutebtn').addEventListener('click',e=>{
   muted=!muted; e.target.textContent=muted?'SOUND OFF':'SOUND ON';
@@ -709,6 +822,7 @@ document.getElementById('brbtn').addEventListener('click',e=>{
   briefings=!briefings; e.target.textContent=briefings?'BRIEFINGS ON':'BRIEFINGS OFF';
 });
 document.addEventListener('keydown',e=>{
+  if(tutOpen){ if(e.key===' '||e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); closeTut(); } return; }
   if(intelOpen){ if(e.key===' '||e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); closeIntel(); } return; }
   const i=['1','2','3','4','5','6','7','8'].indexOf(e.key);
   if(i>-1) select(ORDER[i]);
@@ -718,15 +832,31 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Escape'){ selected=null;sellMode=false;
     document.getElementById('sellbtn').classList.remove('on'); refreshCards(); }
 });
-document.addEventListener('visibilitychange',()=>{ if(document.hidden&&!paused&&!ended&&!intelOpen) togglePause(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&!paused&&!ended&&!intelOpen&&!tutOpen) togglePause(); });
 
+/* Re-project every positioned element after an orientation flip. */
+function relayout(){
+  board.querySelectorAll('.cell').forEach(d=>place(d,+d.dataset.c*PITCH,+d.dataset.r*PITCH));
+  board.querySelectorAll('.rail').forEach(d=>place(d,0,+d.dataset.r*PITCH));
+  [...defenders,...attackers,...projectiles,...tokens].forEach(o=>place(o.el,o.x,o.y));
+}
 function fit(){
   const stage=document.getElementById('stage');
-  const s=Math.min(1,stage.clientWidth/BOARD_W);
+  const w=stage.clientWidth;
+  if(!w) return;
+  const want=w<560;                       // below this, landscape would shrink cells past usability
+  if(want!==PORTRAIT){
+    PORTRAIT=want; board.classList.toggle('portrait',PORTRAIT); relayout();
+    if(tutOpen) showTut(true);            // its wording depends on orientation
+  }
+  const bw=PORTRAIT?BOARD_H:BOARD_W, bh=PORTRAIT?BOARD_W:BOARD_H;
+  board.style.width=bw+'px'; board.style.height=bh+'px';
+  const s=Math.min(1,w/bw);
   document.getElementById('boardwrap').style.transform=`scale(${s})`;
-  stage.style.height=(BOARD_H*s)+'px';
+  stage.style.height=(bh*s)+'px';
 }
 window.addEventListener('resize',fit);
+window.addEventListener('orientationchange',()=>setTimeout(fit,120));
 
 /* ══════════════ playbook ══════════════ */
 document.getElementById('playbook').innerHTML=`
@@ -857,7 +987,9 @@ the eighth. That is why "we bought a firewall" is not a security programme.
 <li><b>Hotkeys:</b> <code>1&#8211;8</code> select · <code>S</code> sell · <code>P</code> pause · <code>H</code> playbook · <code>Esc</code> cancel.</li>
 </ul>`;
 
+if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches) document.body.classList.add('touch');
 buildCards(); reset(); fit();
+if(!seenTut()) showTut(); else updHint();
 })();
 </script>
 </body>
