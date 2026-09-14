@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firewall vs. Malware — v3 · Defense in Depth</title>
+<style>
+  :root{
+    --bg:#070b14; --panel:#101827; --line:#1f2b3d; --ink:#e8eef7; --dim:#7c8ba3;
+    --cyan:#38bdf8; --ram:#4ade80; --red:#f87171; --amber:#fbbf24;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;padding:16px 12px 32px;background:
+      radial-gradient(1200px 620px at 50% -10%, #0d1626 0%, var(--bg) 60%);
+    color:var(--ink);font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+    display:flex;flex-direction:column;align-items:center;min-height:100vh;}
+  h1{font-size:1.1rem;letter-spacing:.22em;margin:0 0 4px;color:var(--cyan);text-transform:uppercase;}
+  .sub{font-size:.66rem;color:var(--dim);letter-spacing:.14em;margin-bottom:12px;text-transform:uppercase;}
+
+  #shell{width:100%;max-width:700px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:12px;box-shadow:0 18px 44px rgba(0,0,0,.6);}
+
+  #hud{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;
+    background:#0a1120;border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin-bottom:8px;}
+  .stat{font-size:.74rem;letter-spacing:.08em;}
+  .stat b{font-size:1rem;}
+  #ramv{color:var(--ram)} #wavev{color:var(--cyan)}
+  #phase{color:var(--dim);font-size:.68rem;letter-spacing:.1em;}
+  #drain{color:var(--red);font-size:.66rem;display:none;}
+  .btns{display:flex;gap:5px;flex-wrap:wrap;}
+  .btn{background:#16233a;border:1px solid var(--line);color:var(--ink);font:inherit;font-size:.66rem;
+    padding:5px 8px;border-radius:5px;cursor:pointer;letter-spacing:.05em;}
+  .btn:hover{border-color:var(--cyan);}
+  .btn.on{border-color:var(--red);color:var(--red);}
+  .btn:focus-visible,.card:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+
+  #cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;}
+  .card{position:relative;overflow:hidden;background:#0d1729;border:1px solid #2a3852;
+    border-radius:6px;padding:6px 4px 5px;cursor:pointer;text-align:center;user-select:none;}
+  .card svg{width:20px;height:20px;display:block;margin:0 auto 2px;}
+  .card .nm{font-size:.6rem;letter-spacing:.03em;line-height:1.2;}
+  .card .fam{font-size:.52rem;color:var(--dim);letter-spacing:.06em;margin-top:1px;}
+  .card .cs{font-size:.6rem;color:var(--ram);margin-top:2px;}
+  .card .hk{position:absolute;top:2px;left:4px;font-size:.52rem;color:var(--dim);}
+  .card:hover{border-color:var(--cyan);}
+  .card.sel{border-color:var(--ram);background:#132238;}
+  .card.no{opacity:.4;cursor:not-allowed;}
+  .card .cd{position:absolute;left:0;right:0;bottom:0;background:rgba(2,6,23,.74);pointer-events:none;height:0;}
+
+  #stage{width:100%;overflow:hidden;}
+  #boardwrap{transform-origin:top left;}
+  #board{position:relative;width:662px;height:366px;background:#020617;border-radius:6px;overflow:hidden;}
+  .cell{position:absolute;width:70px;height:70px;border-radius:4px;background:#0b1424;
+    border:1px solid #111e33;cursor:pointer;}
+  .cell.alt{background:#0d1729;}
+  .cell:hover{background:#16243c;}
+  .rail{position:absolute;left:0;width:4px;height:70px;background:var(--ram);opacity:.85;border-radius:2px;}
+  .rail.spent{background:#3f2020;opacity:.7;}
+
+  /* installed controls = hard-edged appliances */
+  .def{position:absolute;top:0;left:0;width:54px;height:54px;border-radius:5px;z-index:2;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;}
+  .def svg{width:30px;height:30px;}
+  .def .hp{position:absolute;left:4px;right:4px;bottom:3px;height:3px;background:rgba(0,0,0,.55);border-radius:2px;}
+  .def .hp i{display:block;height:100%;background:var(--ram);border-radius:2px;}
+  .def.locked{filter:grayscale(1) brightness(.55);}
+  .def.owned{box-shadow:0 0 0 2px var(--red),0 0 14px rgba(248,113,113,.6);}
+  .def.owned::after{content:'!';position:absolute;top:-2px;right:2px;color:var(--red);font-size:.8rem;font-weight:900;}
+
+  .d-srv{background:#0b5f96;border:2px solid #38bdf8;}
+  .d-fw{background:#15803d;border:2px solid #4ade80;}
+  .d-ids{background:#854d0e;border:2px solid #eab308;}
+  .d-patch{background:#0e7490;border:2px solid #22d3ee;}
+  .d-honey{background:#9d174d;border:2px solid #f472b6;}
+  .d-mfa{background:#3730a3;border:2px solid #818cf8;}
+  .d-bkup{background:#3f6212;border:2px solid #a3e635;}
+  .d-siem{background:#5b21b6;border:2px solid #c4b5fd;}
+
+  /* threats = silhouettes, no chassis */
+  .atk{position:absolute;top:0;left:0;z-index:3;display:flex;justify-content:center;align-items:center;}
+  .atk svg{width:100%;height:100%;overflow:visible;}
+  .atk .hp{position:absolute;left:12%;right:12%;bottom:-3px;height:3px;background:rgba(0,0,0,.6);border-radius:2px;}
+  .atk .hp i{display:block;height:100%;background:var(--red);border-radius:2px;}
+  .atk.hit svg{filter:brightness(2.6);}
+  .atk.slowed{opacity:.82;filter:hue-rotate(30deg);}
+
+  .packet{position:absolute;top:0;left:0;width:11px;height:11px;border-radius:50%;
+    background:var(--ram);box-shadow:0 0 8px var(--ram);z-index:4;}
+  .token{position:absolute;top:0;left:0;width:26px;height:26px;border-radius:50%;background:var(--ram);
+    color:#04120a;font-size:.54rem;font-weight:800;display:flex;justify-content:center;align-items:center;
+    cursor:pointer;z-index:6;box-shadow:0 0 12px rgba(74,222,128,.7);animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+
+  #banner{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;align-items:center;
+    color:var(--cyan);text-shadow:0 0 14px rgba(56,189,248,.6);pointer-events:none;z-index:8;text-align:center;}
+  #banner .b1{font-size:1.4rem;letter-spacing:.2em;}
+  #banner .b2{font-size:.68rem;letter-spacing:.12em;color:var(--dim);margin-top:6px;}
+  #over{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;align-items:center;
+    background:rgba(2,6,23,.94);z-index:9;text-align:center;padding:16px;}
+  #over h2{margin:0 0 6px;font-size:1.5rem;letter-spacing:.18em;}
+  #over .lines{font-size:.74rem;color:var(--dim);line-height:1.9;margin-bottom:14px;}
+  #tip{margin-top:8px;font-size:.62rem;color:var(--dim);letter-spacing:.05em;text-align:center;line-height:1.7;}
+
+  /* ---------- playbook ---------- */
+  #playbook{display:none;margin-top:10px;background:#0a1120;border:1px solid var(--line);
+    border-radius:7px;padding:16px;font-size:.7rem;line-height:1.75;color:#c9d6e8;}
+  #playbook h2{font-size:.72rem;letter-spacing:.2em;color:var(--amber);text-transform:uppercase;
+    margin:22px 0 8px;border-top:1px solid var(--line);padding-top:14px;}
+  #playbook h2:first-child{margin-top:0;border-top:none;padding-top:0;}
+  #playbook h3{font-size:.68rem;letter-spacing:.1em;color:var(--cyan);margin:14px 0 4px;}
+  #playbook table{width:100%;border-collapse:collapse;font-size:.64rem;margin:6px 0;}
+  #playbook th{text-align:left;color:var(--dim);font-weight:600;letter-spacing:.07em;
+    border-bottom:1px solid var(--line);padding:5px 8px 5px 0;}
+  #playbook td{padding:5px 8px 5px 0;border-bottom:1px solid #16223a;vertical-align:top;}
+  #playbook td:first-child{color:var(--ink);font-weight:700;white-space:nowrap;}
+  #playbook pre{background:#060c18;border:1px solid var(--line);border-radius:5px;padding:11px;
+    overflow-x:auto;font-size:.6rem;line-height:1.65;color:#9fb3cc;margin:8px 0;}
+  #playbook ul{margin:5px 0;padding-left:16px;}
+  #playbook li{margin-bottom:4px;}
+  #playbook .k{color:var(--ram);}
+  #playbook .w{color:var(--red);}
+  #playbook .note{border-left:2px solid var(--amber);padding:2px 0 2px 10px;margin:8px 0;color:#b9c8dc;}
+  #playbook code{background:#12203a;padding:1px 4px;border-radius:3px;font-size:.95em;}
+
+  /* ---------- threat intel briefing ---------- */
+  #intel{position:absolute;inset:0;display:none;justify-content:center;align-items:center;
+    background:rgba(2,6,23,.93);z-index:12;padding:14px;}
+  #intel .box{width:100%;max-width:520px;background:#0a1120;border:1px solid var(--red);
+    border-radius:8px;padding:14px 16px;box-shadow:0 0 34px rgba(248,113,113,.25);}
+  #intel .top{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px;}
+  #intel .sprite{width:52px;height:52px;flex:0 0 52px;}
+  #intel .sprite svg{width:100%;height:100%;}
+  #intel .eyebrow{font-size:.55rem;letter-spacing:.22em;color:var(--red);text-transform:uppercase;}
+  #intel h4{margin:2px 0 1px;font-size:.95rem;letter-spacing:.1em;color:var(--ink);}
+  #intel .vec{font-size:.6rem;color:var(--dim);letter-spacing:.06em;}
+  #intel .chips{display:flex;gap:6px;margin:10px 0 8px;flex-wrap:wrap;}
+  #intel .chip{background:#12203a;border:1px solid var(--line);border-radius:4px;
+    padding:3px 7px;font-size:.56rem;letter-spacing:.06em;color:#a9bcd4;}
+  #intel .chip b{color:var(--ink);}
+  #intel .body{font-size:.65rem;line-height:1.7;color:#c2d1e5;}
+  #intel .counter{margin-top:9px;border-left:2px solid var(--ram);background:#0c1a12;
+    padding:7px 10px;font-size:.65rem;line-height:1.65;color:#d6ecdb;border-radius:0 4px 4px 0;}
+  #intel .counter b{color:var(--ram);letter-spacing:.06em;}
+  #intel .foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;}
+  #intel .hintline{font-size:.55rem;color:var(--dim);letter-spacing:.05em;}
+  #playbook .seen{color:var(--ram);font-size:.9em;}
+
+  @media (max-width:520px){ #cards{grid-template-columns:repeat(3,1fr);} }
+  @media (prefers-reduced-motion: reduce){ .token{animation:none} }
+</style>
+</head>
+<body>
+
+<h1>Firewall vs. Malware</h1>
+<div class="sub">Defense in depth · 8 controls · 8 attack vectors · 15 waves</div>
+
+<div id="shell">
+  <div id="hud">
+    <div class="stat">RAM <b id="ramv">500</b> <span id="drain">▼ mining</span></div>
+    <div class="stat">WAVE <b id="wavev">0</b>/15</div>
+    <div id="phase">BUILD PHASE — 20s</div>
+    <div class="btns">
+      <button class="btn" id="sellbtn">SELL [S]</button>
+      <button class="btn" id="pausebtn">PAUSE [P]</button>
+      <button class="btn" id="mutebtn">SOUND ON</button>
+      <button class="btn" id="pbbtn">PLAYBOOK [H]</button>
+      <button class="btn" id="brbtn">BRIEFINGS ON</button>
+    </div>
+  </div>
+
+  <div id="cards"></div>
+
+  <div id="stage"><div id="boardwrap"><div id="board">
+    <div id="banner"></div><div id="intel"></div><div id="over"></div>
+  </div></div></div>
+
+  <div id="tip">Click a card, then a tile · click RAM tokens to collect · a <span style="color:#f87171">red-flagged control is compromised — click it to remediate</span> · each lane holds one auto-remediation charge</div>
+
+  <div id="playbook"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ══════════════ geometry ══════════════ */
+const PITCH=74, COLS=9, ROWS=5, DSZ=54, OFF=8;
+const BOARD_W=COLS*PITCH-4, BOARD_H=ROWS*PITCH-4;
+const TOTAL_WAVES=15;
+
+/* ══════════════ artwork ══════════════
+   Controls are boxes (installed appliances).
+   Threats are silhouettes — each shaped like the thing it represents. */
+const ART = {
+  srv:`<svg viewBox="0 0 24 24" fill="none" stroke="#e6f4ff" stroke-width="1.6"><rect x="3" y="3.5" width="18" height="6" rx="1"/><rect x="3" y="14.5" width="18" height="6" rx="1"/><circle cx="6.5" cy="6.5" r=".9" fill="#e6f4ff" stroke="none"/><circle cx="6.5" cy="17.5" r=".9" fill="#e6f4ff" stroke="none"/><path d="M10 6.5h8M10 17.5h8"/></svg>`,
+  fw:`<svg viewBox="0 0 24 24" fill="none" stroke="#eaffef" stroke-width="1.5"><path d="M2 6h20M2 12h20M2 18h20"/><path d="M8 6V2.5M16 6V2.5M5 12V6M12 12V6M19 12V6M8 18v-6M16 18v-6M5 21.5V18M12 21.5V18M19 21.5V18"/></svg>`,
+  ids:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff4d6" stroke-width="1.6"><circle cx="12" cy="12" r="2"/><path d="M12 12 19 6"/><path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5" opacity=".9"/><path d="M12 7a5 5 0 0 1 5 5" opacity=".65"/><path d="M3.5 12A8.5 8.5 0 0 0 12 20.5" opacity=".4"/></svg>`,
+  patch:`<svg viewBox="0 0 24 24" fill="none" stroke="#e0feff" stroke-width="1.7"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M10 12h4M12 10v4"/></svg>`,
+  honey:`<svg viewBox="0 0 24 24" fill="none" stroke="#ffe4f1" stroke-width="1.6"><path d="M5 8h14l-1.6 11.5a1.6 1.6 0 0 1-1.6 1.4H8.2a1.6 1.6 0 0 1-1.6-1.4Z"/><path d="M3.5 5.5h17V8h-17z"/><path d="M11 12.2l1-1.7 1 1.7-1 1.7z" fill="#ffe4f1"/></svg>`,
+  mfa:`<svg viewBox="0 0 24 24" fill="none" stroke="#e6e8ff" stroke-width="1.6"><circle cx="8.5" cy="12" r="3.5"/><path d="M12 12h9M17.5 12v3.5M20.5 12v2.5"/><circle cx="8.5" cy="12" r="1" fill="#e6e8ff" stroke="none"/></svg>`,
+  bkup:`<svg viewBox="0 0 24 24" fill="none" stroke="#f0ffe0" stroke-width="1.5"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.6"/><path d="M4.5 5.5v5.5c0 1.4 3.4 2.6 7.5 2.6s7.5-1.2 7.5-2.6V5.5"/><path d="M4.5 11.5V17c0 1.4 3.4 2.6 7.5 2.6s7.5-1.2 7.5-2.6v-5.5"/></svg>`,
+  siem:`<svg viewBox="0 0 24 24" fill="none" stroke="#f1eaff" stroke-width="1.6"><rect x="2.5" y="4" width="19" height="14" rx="1.5"/><path d="M5.5 14l3.5-4 3 2.5L16 7.5l2.5 3.5"/><path d="M9 21h6"/></svg>`,
+
+  /* ── threats ── */
+  // commodity malware: lumpy bug with legs
+  skid:`<svg viewBox="0 0 24 24"><g stroke="#fca5a5" stroke-width="1.5" fill="none"><path d="M6 11 2.5 8M6 14l-3.5 1.5M18 11l3.5-3M18 14l3.5 1.5M9 6.5 7.5 3M15 6.5 16.5 3"/></g><ellipse cx="12" cy="13" rx="6" ry="7" fill="#dc2626" stroke="#fca5a5" stroke-width="1.5"/><circle cx="9.8" cy="11" r="1.1" fill="#0b0b0b"/><circle cx="14.2" cy="11" r="1.1" fill="#0b0b0b"/></svg>`,
+  // phishing: a hook through an envelope
+  phish:`<svg viewBox="0 0 24 24"><rect x="2.5" y="9" width="14" height="10" rx="1.4" fill="#0e7490" stroke="#67e8f9" stroke-width="1.5"/><path d="M2.5 10.2 9.5 15l7-4.8" fill="none" stroke="#67e8f9" stroke-width="1.5"/><path d="M19 2.5v9a4 4 0 0 1-8 0" fill="none" stroke="#fde047" stroke-width="1.8" stroke-linecap="round"/><path d="M16.6 4.2 19 2 21.4 4.2" fill="none" stroke="#fde047" stroke-width="1.6"/></svg>`,
+  // DDoS: botnet hub, one node commanding many
+  ddos:`<svg viewBox="0 0 24 24"><g stroke="#c4b5fd" stroke-width="1.2" opacity=".85"><path d="M12 12 4 5M12 12l8-7M12 12l-8 7M12 12l8 7M12 12H2.5M12 12h9.5"/></g><g fill="#7c3aed" stroke="#c4b5fd" stroke-width="1.1"><circle cx="4" cy="5" r="2"/><circle cx="20" cy="5" r="2"/><circle cx="4" cy="19" r="2"/><circle cx="20" cy="19" r="2"/><circle cx="2.5" cy="12" r="1.6"/><circle cx="21.5" cy="12" r="1.6"/></g><circle cx="12" cy="12" r="3.6" fill="#4c1d95" stroke="#c4b5fd" stroke-width="1.6"/></svg>`,
+  // worm: segmented chain, self-propagating
+  worm:`<svg viewBox="0 0 24 24"><g fill="#65a30d" stroke="#bef264" stroke-width="1.3"><circle cx="4.5" cy="16" r="3"/><circle cx="9.5" cy="12.5" r="3.2"/><circle cx="15" cy="10" r="3.4"/><circle cx="19.5" cy="6.5" r="3.6"/></g><circle cx="18.6" cy="5.4" r=".9" fill="#0b0b0b"/><circle cx="21" cy="6" r=".9" fill="#0b0b0b"/></svg>`,
+  // zero-day: a sharp unpatched shard
+  zero:`<svg viewBox="0 0 24 24"><path d="M13.5 1.5 4 13h6l-1.5 9.5L20 10h-6.5Z" fill="#f97316" stroke="#fed7aa" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  // ransomware: padlock, shackle closed
+  ransom:`<svg viewBox="0 0 24 24"><path d="M7 10V7.5a5 5 0 0 1 10 0V10" fill="none" stroke="#c4b5fd" stroke-width="2"/><rect x="4.5" y="10" width="15" height="11" rx="2" fill="#4c1d95" stroke="#c4b5fd" stroke-width="1.5"/><circle cx="12" cy="15" r="1.7" fill="#c4b5fd"/><path d="M12 16.4v2.4" stroke="#c4b5fd" stroke-width="1.6"/></svg>`,
+  // cryptominer: coin being chipped by a pick
+  miner:`<svg viewBox="0 0 24 24"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7Z" fill="#a16207" stroke="#fcd34d" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 8.5h4.2a2.4 2.4 0 0 1 0 4.8H9zM9 13.3h4.6a2.4 2.4 0 0 1 0 4.8H9zM9 6.5v13" fill="none" stroke="#fef3c7" stroke-width="1.3"/></svg>`,
+  // APT: shielded eye — patient, watching, hard to see
+  apt:`<svg viewBox="0 0 24 24"><path d="M12 1.5 21.5 5v7.5c0 5.5-4.2 8.8-9.5 10.5C6.7 21.3 2.5 18 2.5 12.5V5Z" fill="#7f1d1d" stroke="#fbbf24" stroke-width="1.5" stroke-linejoin="round"/><path d="M4.8 12.2s3-4.4 7.2-4.4 7.2 4.4 7.2 4.4-3 4.4-7.2 4.4-7.2-4.4-7.2-4.4Z" fill="#1c0505" stroke="#fbbf24" stroke-width="1.1"/><circle cx="12" cy="12.2" r="2.4" fill="#fbbf24"/><circle cx="12" cy="12.2" r="1" fill="#1c0505"/></svg>`
+};
+
+/* ══════════════ controls ══════════════ */
+const DEF = {
+  srv  :{name:'Compute Node', fam:'ASSET',    cost:50, hp:100, cool:5,  cls:'d-srv',   art:'srv'},
+  fw   :{name:'Firewall',     fam:'PROTECT',  cost:100,hp:200, cool:5,  cls:'d-fw',    art:'fw'},
+  ids  :{name:'IDS Sensor',   fam:'DETECT',   cost:125,hp:120, cool:14, cls:'d-ids',   art:'ids'},
+  patch:{name:'Patch Mgmt',   fam:'PROTECT',  cost:125,hp:220, cool:12, cls:'d-patch', art:'patch'},
+  honey:{name:'Honeypot',     fam:'DECEPT',   cost:75, hp:900, cool:14, cls:'d-honey', art:'honey'},
+  mfa  :{name:'MFA Gateway',  fam:'IDENTITY', cost:100,hp:180, cool:12, cls:'d-mfa',   art:'mfa'},
+  bkup :{name:'Snapshot',     fam:'RECOVER',  cost:150,hp:180, cool:16, cls:'d-bkup',  art:'bkup'},
+  siem :{name:'SIEM',         fam:'DETECT',   cost:200,hp:150, cool:20, cls:'d-siem',  art:'siem'}
+};
+const ORDER=['srv','fw','ids','patch','honey','mfa','bkup','siem'];
+
+/* ══════════════ threats ══════════════ */
+const ATK = {
+  skid  :{label:'SKID', hp:150, speed:18, dmg:12, rate:1.0, art:'skid',  size:46, cost:10, unlock:1, weight:5},
+  ddos  :{label:'DDoS', hp:90,  speed:34, dmg:20, rate:1.2, art:'ddos',  size:44, cost:15, unlock:2, weight:4},
+  phish :{label:'PHSH', hp:110, speed:26, dmg:0,  rate:1.0, art:'phish', size:44, cost:18, unlock:3, weight:3, social:true},
+  zero  :{label:'0DAY', hp:120, speed:40, dmg:15, rate:1.0, art:'zero',  size:42, cost:20, unlock:4, weight:3, phase:true, evasive:true},
+  worm  :{label:'WORM', hp:170, speed:20, dmg:14, rate:1.0, art:'worm',  size:46, cost:22, unlock:5, weight:3, propagate:9},
+  ransom:{label:'RNSM', hp:260, speed:16, dmg:0,  rate:1.0, art:'ransom',size:46, cost:25, unlock:6, weight:3, lock:8},
+  miner :{label:'MINR', hp:420, speed:12, dmg:8,  rate:1.0, art:'miner', size:46, cost:24, unlock:7, weight:2, drain:4},
+  apt   :{label:'APT',  hp:1500,speed:10, dmg:40, rate:1.0, art:'apt',   size:66, cost:100,unlock:99,weight:0, boss:true, spawnEvery:6, stealth:.5}
+};
+
+/* ══════════════ threat intel (shown once, on first ever contact) ══════════════ */
+const INTEL = {
+  skid:{vec:'COMMODITY MALWARE · OPPORTUNISTIC SCANNING',
+    body:'Untargeted, mass-distributed, exploiting whatever it finds unguarded. It has no plan for you specifically — it simply arrived first and cheapest.',
+    counter:'Any Firewall handles it. A Patch Server heals faster than it damages, cancelling it outright. If SKID is hurting you, the lane is already broken.'},
+  ddos:{vec:'VOLUMETRIC ATTACK · IMPACT / AVAILABILITY',
+    body:'Fragile individually — 90 HP — but fast, and it arrives in volume. The threat is throughput, not strength.',
+    counter:'Deploy an IDS Sensor behind your Firewalls. Speed is the entire attack: cut it 45% and each bot spends long enough under fire to die in three packets.'},
+  phish:{vec:'SOCIAL ENGINEERING · INITIAL ACCESS',
+    body:'Walks straight through every technical control on the board — Firewalls, walls, sensors, all of it. It targets the human, not the network, and takes over the first Compute Node it touches. A compromised Node earns nothing until you click it to remediate.',
+    counter:'MFA Gateway — and it must sit IN FRONT of the Nodes it protects, because PHSH stops at whichever control it meets first. A Snapshot in the lane auto-remediates a takeover you miss.'},
+  zero:{vec:'UNPATCHED VULNERABILITY · DEFENSE EVASION',
+    body:'The fastest thing on the board. It phases through Honeypots entirely and your IDS cannot slow it — no signature exists for it yet.',
+    counter:'SIEM in the lane restores detection and re-enables the slow, then raw Firewall damage finishes it. A deception-only lane gives it a free run at your assets.'},
+  worm:{vec:'SELF-PROPAGATION · LATERAL MOVEMENT',
+    body:'Every 9 seconds it clones itself into an adjacent lane, up to two generations. One worm becomes four if the lanes beside it are weak.',
+    counter:'Segmentation and speed. Kill it in the lane it spawned in, and never leave a neighbouring lane undefended — containment matters more than firepower here.'},
+  ransom:{vec:'EXTORTION · DATA ENCRYPTED FOR IMPACT',
+    body:'Deals no damage at all. It disables a control for 8 seconds and walks past it. The hole it leaves behind is the attack.',
+    counter:'Snapshot cuts the outage to roughly 4 seconds. Beyond that: depth. Two Firewalls, not one — a lane with a single point of failure loses to this every time.'},
+  miner:{vec:'RESOURCE HIJACKING · CRYPTOJACKING',
+    body:'Barely fights, absorbs 420 HP of damage, and quietly drains 4 RAM every second it stays alive. Ignoring it costs more than killing it.',
+    counter:'Concentrated Firewall damage, immediately. Not every intrusion is loud — the quiet ones bill you continuously.'},
+  apt:{vec:'ADVANCED PERSISTENT THREAT · FULL KILL CHAIN',
+    body:'1500 HP, escorted by a fresh SKID every 6 seconds, and it takes only half damage while undetected. Patient, funded, and specifically here for you.',
+    counter:'Get an IDS or SIEM into that lane FIRST — undetected, it shrugs off half your firepower. You cannot shoot what you cannot see. Then focus every Firewall on it.'}
+};
+const everSeen={}; let briefings=true, intelQueue=[], intelOpen=false, intelPaused=false;
+
+/* ══════════════ tuning ══════════════ */
+const FW_DMG=25, FW_RATE=.8, SIEM_RATE=.55, PROJ_SPEED=320;
+const SRV_EVERY=6, SRV_YIELD=25;
+const IDS_RANGE=4*PITCH, IDS_SLOW=.55;
+const PATCH_HEAL=30, HONEY_PULL=PITCH*2, HONEY_REFLECT=10, BKUP_EVERY=4;
+const DROP_EVERY=9, TOKEN_LIFE=10, TOKEN_VALUE=25;
+const PREP_TIME=20, BREATHER=12, START_RAM=500;
+
+const WAVE_NOTE={1:'COMMODITY MALWARE',2:'VOLUMETRIC FLOOD',3:'SOCIAL ENGINEERING',4:'UNPATCHED EXPLOIT',
+  5:'ADVANCED PERSISTENT THREAT',6:'EXTORTION',7:'RESOURCE HIJACKING',10:'APT — SECOND INTRUSION',15:'FINAL INTRUSION'};
+
+/* ══════════════ state ══════════════ */
+const board=document.getElementById('board');
+const bannerEl=document.getElementById('banner');
+const overEl=document.getElementById('over');
+let ram,wave,phase,phaseT,selected,sellMode,paused,ended,muted=false;
+let dropT,queue,spawnT,spawnGap,rails,stats;
+const defenders=[],attackers=[],projectiles=[],tokens=[];
+const cooldowns={},cardEls={};
+let raf=null,last=0;
+
+/* ══════════════ audio ══════════════ */
+let ac=null;
+function beep(f,d=.06,t='square',v=.05){
+  if(muted) return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=t;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(ac.destination);o.start();
+    g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);o.stop(ac.currentTime+d+.02);
+  }catch(e){}
+}
+
+/* ══════════════ board ══════════════ */
+function buildBoard(){
+  [...board.querySelectorAll('.cell,.rail')].forEach(e=>e.remove());
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const d=document.createElement('div');
+      d.className='cell'+((r+c)%2?' alt':'');
+      d.style.transform=`translate3d(${c*PITCH}px,${r*PITCH}px,0)`;
+      d.addEventListener('click',()=>cellClick(r,c));
+      board.appendChild(d);
+    }
+    const rail=document.createElement('div');
+    rail.className='rail';
+    rail.style.transform=`translate3d(0,${r*PITCH}px,0)`;
+    board.appendChild(rail);
+    rails[r]={el:rail,armed:true};
+  }
+}
+function buildCards(){
+  const wrap=document.getElementById('cards'); wrap.innerHTML='';
+  ORDER.forEach((k,i)=>{
+    const d=DEF[k], el=document.createElement('div');
+    el.className='card'; el.tabIndex=0;
+    el.innerHTML=`<span class="hk">${i+1}</span>${ART[d.art]}<div class="nm">${d.name}</div>
+      <div class="fam">${d.fam}</div><div class="cs">${d.cost}</div><div class="cd"></div>`;
+    const pick=()=>select(k);
+    el.addEventListener('click',pick);
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});
+    wrap.appendChild(el); cardEls[k]=el;
+  });
+}
+
+/* ══════════════ helpers ══════════════ */
+const now=()=>performance.now()/1000;
+const cellX=c=>c*PITCH+OFF, cellY=r=>r*PITCH+OFF;
+const place=(el,x,y)=>{el.style.transform=`translate3d(${x}px,${y}px,0)`;};
+const setHP=e=>{e.bar.style.width=Math.max(0,e.hp/e.maxHp*100)+'%';};
+function hitFx(a){a.el.classList.add('hit');setTimeout(()=>a.el.classList.remove('hit'),60);}
+const rowHas=(r,type)=>defenders.some(d=>d.row===r&&d.type===type&&d.lockUntil<now()&&!d.owned);
+const detected=r=>rowHas(r,'ids')||rowHas(r,'siem');
+
+/* ══════════════ placement ══════════════ */
+function select(k){
+  if(ended||!k) return;
+  sellMode=false; document.getElementById('sellbtn').classList.remove('on');
+  selected=(selected===k)?null:k; refreshCards();
+}
+function toggleSell(){
+  if(ended) return;
+  sellMode=!sellMode; selected=null;
+  document.getElementById('sellbtn').classList.toggle('on',sellMode); refreshCards();
+}
+function cellClick(r,c){
+  if(ended||paused) return;
+  const occ=defenders.find(d=>d.row===r&&d.col===c);
+  if(occ&&occ.owned){ occ.owned=false; occ.el.classList.remove('owned'); beep(700,.1,'sine'); return; }
+  if(sellMode){
+    if(occ){ ram+=Math.floor(DEF[occ.type].cost/2); removeDefender(occ); beep(220,.08,'sine'); updHUD(); }
+    return;
+  }
+  if(!selected) return;
+  const d=DEF[selected];
+  if(occ||ram<d.cost||cooldowns[selected]>now()){ beep(120,.08,'sine',.03); return; }
+  ram-=d.cost; cooldowns[selected]=now()+d.cool;
+  const el=document.createElement('div');
+  el.className=`def ${d.cls}`;
+  el.innerHTML=`${ART[d.art]}<div class="hp"><i style="width:100%"></i></div>`;
+  place(el,cellX(c),cellY(r)); board.appendChild(el);
+  defenders.push({type:selected,row:r,col:c,x:cellX(c),y:cellY(r),hp:d.hp,maxHp:d.hp,
+    el,bar:el.querySelector('.hp i'),t:0,lockUntil:0,owned:false});
+  beep(520,.06,'triangle'); selected=null; updHUD(); refreshCards();
+}
+function removeDefender(d){ d.el.remove(); const i=defenders.indexOf(d); if(i>-1) defenders.splice(i,1); }
+
+/* ══════════════ tokens ══════════════ */
+function dropToken(x,y){
+  const el=document.createElement('div');
+  el.className='token'; el.textContent='RAM';
+  place(el,x,y); board.appendChild(el);
+  const t={el,born:now()};
+  el.addEventListener('click',e=>{
+    e.stopPropagation(); ram+=TOKEN_VALUE; stats.ramEarned+=TOKEN_VALUE; beep(880,.07,'sine');
+    el.remove(); const i=tokens.indexOf(t); if(i>-1) tokens.splice(i,1); updHUD(); refreshCards();
+  });
+  tokens.push(t);
+}
+
+/* ══════════════ waves ══════════════ */
+function buildWave(w){
+  const budget=Math.round(35+20*w+2*w*w);
+  const pool=Object.keys(ATK).filter(k=>!ATK[k].boss&&w>=ATK[k].unlock);
+  const list=[]; let spent=0;
+  if(w%5===0){ const n=(w===15?2:1); for(let i=0;i<n;i++){list.push('apt');spent+=ATK.apt.cost;} }
+  let guard=0;
+  while(spent<budget&&guard++<500){
+    const weighted=[]; pool.forEach(k=>{for(let i=0;i<ATK[k].weight;i++) weighted.push(k);});
+    const k=weighted[Math.floor(Math.random()*weighted.length)];
+    list.push(k); spent+=ATK[k].cost;
+  }
+  for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}
+  return list;
+}
+function startWave(){
+  wave++; queue=buildWave(wave); spawnGap=Math.max(.6,2.2-wave*.1); spawnT=0; phase='wave';
+  banner(`WAVE ${wave}`, WAVE_NOTE[wave]||'MIXED INTRUSION');
+  beep(320,.16,'sawtooth',.06); updHUD();
+}
+function banner(a,b){
+  bannerEl.innerHTML=`<div class="b1">${a}</div><div class="b2">${b||''}</div>`;
+  bannerEl.style.display='flex';
+  setTimeout(()=>{bannerEl.style.display='none';},1500);
+}
+function spawn(kind,row,x){
+  const a=ATK[kind], sz=a.size;
+  const el=document.createElement('div');
+  el.className='atk'; el.style.width=sz+'px'; el.style.height=sz+'px';
+  el.innerHTML=`${ART[a.art]}<div class="hp"><i style="width:100%"></i></div>`;
+  const y=cellY(row)+(DSZ-sz)/2, px=(x===undefined)?BOARD_W+30:x;
+  place(el,px,y); board.appendChild(el);
+  attackers.push({kind,row,x:px,y,targetY:y,size:sz,hp:a.hp,maxHp:a.hp,speed:a.speed,dmg:a.dmg,
+    rate:a.rate,cd:0,el,bar:el.querySelector('.hp i'),slow:1,t:0,gen:0});
+  if(!everSeen[kind]){ everSeen[kind]=true; markSeen(kind); if(briefings) queueIntel(kind); }
+}
+
+/* ══════════════ combat ══════════════ */
+function fire(d){
+  const el=document.createElement('div'); el.className='packet';
+  const x=d.x+DSZ-6,y=d.y+DSZ/2-6;
+  place(el,x,y); board.appendChild(el);
+  projectiles.push({row:d.row,x,y,el}); beep(660,.035,'square',.022);
+}
+function kill(a){ a.el.remove(); const i=attackers.indexOf(a); if(i>-1) attackers.splice(i,1); stats.killed++; }
+function blockerFor(a){
+  const d=ATK[a.kind];
+  return defenders.find(x=>{
+    if(x.row!==a.row||x.lockUntil>now()) return false;
+    if(d.social && x.type!=='srv' && x.type!=='mfa') return false;   // phishing bypasses technical controls
+    if(d.phase && x.type==='honey') return false;                     // 0day ignores deception
+    return (a.x-x.x)<34 && (a.x-x.x)>-32;
+  });
+}
+
+/* ══════════════ loop ══════════════ */
+function tick(ts){
+  raf=requestAnimationFrame(tick);
+  const t=ts/1000; if(!last) last=t;
+  let dt=t-last; last=t;
+  if(paused||ended) return;
+  if(dt>.1) dt=.1;
+  update(dt);
+}
+
+function update(dt){
+  const nw=now();
+
+  if(phase==='prep'||phase==='rest'){
+    phaseT-=dt; if(phaseT<=0) startWave();
+  }else if(phase==='wave'){
+    spawnT-=dt;
+    if(queue.length&&spawnT<=0){ spawnT=spawnGap; spawn(queue.pop(),Math.floor(Math.random()*ROWS)); }
+    if(!queue.length&&!attackers.length){
+      stats.waves=wave;
+      if(wave>=TOTAL_WAVES){ finish(true); return; }
+      phase='rest'; phaseT=BREATHER; ram+=25; stats.ramEarned+=25; beep(760,.12,'sine',.05);
+    }
+  }
+
+  dropT-=dt;
+  if(dropT<=0){ dropT=DROP_EVERY; dropToken(40+Math.random()*(BOARD_W-110),30+Math.random()*(BOARD_H-80)); }
+  for(let i=tokens.length-1;i>=0;i--) if(nw-tokens[i].born>TOKEN_LIFE){ tokens[i].el.remove(); tokens.splice(i,1); }
+
+  /* ── controls ── */
+  defenders.forEach(d=>{
+    const locked=d.lockUntil>nw;
+    d.el.classList.toggle('locked',locked);
+    if(locked||d.owned) return;
+    d.t+=dt;
+    if(d.type==='srv'&&d.t>=SRV_EVERY){ d.t=0; dropToken(d.x+14,d.y+14); }
+    else if(d.type==='fw'){
+      const rate=rowHas(d.row,'siem')?SIEM_RATE:FW_RATE;
+      if(d.t>=rate&&attackers.some(a=>a.row===d.row&&a.x>d.x)){ d.t=0; fire(d); }
+    }
+    else if(d.type==='patch'&&d.t>=1){
+      d.t=0;
+      defenders.forEach(o=>{
+        if(o===d) return;
+        if(Math.abs(o.row-d.row)<=1&&Math.abs(o.col-d.col)<=1&&o.hp<o.maxHp){
+          o.hp=Math.min(o.maxHp,o.hp+PATCH_HEAL); setHP(o);
+        }
+      });
+    }
+    else if(d.type==='bkup'&&d.t>=BKUP_EVERY){
+      d.t=0;
+      defenders.forEach(o=>{ if(o.row===d.row&&(o.lockUntil>nw||o.owned)){ o.lockUntil=0; o.owned=false; o.el.classList.remove('owned'); } });
+    }
+  });
+
+  /* ── projectiles ── */
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i]; p.x+=PROJ_SPEED*dt; place(p.el,p.x,p.y);
+    const hit=attackers.find(a=>a.row===p.row&&a.x-p.x<26&&a.x-p.x>-24);
+    if(hit){
+      const st=ATK[hit.kind].stealth;
+      const dmg=(st&&!detected(hit.row))?FW_DMG*st:FW_DMG;   // undetected APT is hard to hurt
+      hit.hp-=dmg; setHP(hit); hitFx(hit);
+      p.el.remove(); projectiles.splice(i,1);
+      if(hit.hp<=0) kill(hit);
+      continue;
+    }
+    if(p.x>BOARD_W+20){ p.el.remove(); projectiles.splice(i,1); }
+  }
+
+  /* ── threats ── */
+  for(let i=attackers.length-1;i>=0;i--){
+    const a=attackers[i], def=ATK[a.kind];
+
+    // detection / evasion
+    const inIDS=defenders.some(d=>d.type==='ids'&&d.lockUntil<nw&&!d.owned&&d.row===a.row&&a.x>d.x&&a.x<d.x+IDS_RANGE);
+    const evades=def.evasive&&!rowHas(a.row,'siem');           // signature evasion, unless correlated
+    const slowed=inIDS&&!evades;
+    a.slow=slowed?IDS_SLOW:1;
+    a.el.classList.toggle('slowed',slowed);
+
+    // deception pull
+    if(!def.phase&&!def.social&&a.targetY===a.y){
+      const h=defenders.find(d=>d.type==='honey'&&d.lockUntil<nw&&Math.abs(d.row-a.row)<=2&&Math.abs(d.x-a.x)<HONEY_PULL);
+      if(h){ a.row=h.row; a.targetY=cellY(h.row)+(DSZ-a.size)/2; }
+    }
+    if(Math.abs(a.targetY-a.y)>.5) a.y+=(a.targetY-a.y)*Math.min(1,dt*4);
+
+    // resource hijack
+    if(def.drain){ ram=Math.max(0,ram-def.drain*dt); stats.drained+=def.drain*dt; }
+
+    // self-propagation (lateral movement)
+    if(def.propagate){
+      a.t+=dt;
+      if(a.t>=def.propagate&&a.gen<2){
+        a.t=0;
+        const dir=Math.random()<.5?-1:1;
+        const nr=Math.max(0,Math.min(ROWS-1,a.row+dir));
+        if(nr!==a.row){ spawn('worm',nr,a.x); attackers[attackers.length-1].gen=a.gen+1; beep(240,.07,'square',.03); }
+      }
+    }
+    // boss escort
+    if(def.boss){ a.t+=dt; if(a.t>=def.spawnEvery){ a.t=0; spawn('skid',a.row); } }
+
+    const blocker=blockerFor(a);
+    if(blocker){
+      a.cd-=dt;
+      if(a.cd<=0){
+        a.cd=1/a.rate;
+        if(def.social){
+          if(blocker.type==='mfa'){ kill(a); beep(900,.1,'sine',.05); continue; }   // identity control holds
+          blocker.owned=true; blocker.el.classList.add('owned'); stats.owned++;
+          kill(a); beep(160,.16,'sawtooth',.05); continue;                          // account takeover
+        }
+        if(def.lock){ blocker.lockUntil=nw+def.lock; beep(180,.12,'sawtooth',.04); }
+        else{
+          blocker.hp-=a.dmg; setHP(blocker);
+          if(blocker.type==='honey'){ a.hp-=HONEY_REFLECT; setHP(a); hitFx(a); if(a.hp<=0){ kill(a); continue; } }
+          if(blocker.hp<=0){ removeDefender(blocker); stats.lost++; beep(150,.12,'square',.04); }
+        }
+      }
+    }else{
+      a.x-=a.speed*a.slow*dt;
+    }
+    place(a.el,a.x,a.y);
+
+    if(a.x<2){
+      const rail=rails[a.row];
+      if(rail.armed){
+        rail.armed=false; rail.el.classList.add('spent');
+        attackers.filter(x=>x.row===a.row).slice().forEach(kill);
+        stats.breaches++; beep(200,.25,'sawtooth',.07);
+      }else{ finish(false); return; }
+    }
+  }
+
+  updHUD(); refreshCards();
+}
+
+/* ══════════════ threat briefings ══════════════ */
+function markSeen(kind){
+  const cell=document.getElementById('seen-'+kind);
+  if(cell) cell.innerHTML='<span class="seen">&#10003;</span> '+cell.textContent.trim();
+}
+function queueIntel(kind){ intelQueue.push(kind); if(!intelOpen) showIntel(); }
+function showIntel(){
+  const kind=intelQueue.shift(); if(!kind) return;
+  const a=ATK[kind], t=INTEL[kind];
+  intelOpen=true;
+  if(!paused&&!ended){ intelPaused=true; togglePause(); }
+  const el=document.getElementById('intel');
+  el.innerHTML=`<div class="box">
+    <div class="top">
+      <div class="sprite">${ART[a.art]}</div>
+      <div>
+        <div class="eyebrow">New threat detected &#183; first contact</div>
+        <h4>${a.label}</h4>
+        <div class="vec">${t.vec}</div>
+      </div>
+    </div>
+    <div class="chips">
+      <span class="chip">HP <b>${a.hp}</b></span>
+      <span class="chip">SPEED <b>${a.speed}</b></span>
+      <span class="chip">DAMAGE <b>${a.dmg?a.dmg+'/hit':'none'}</b></span>
+      <span class="chip">FIRST SEEN <b>WAVE ${wave}</b></span>
+    </div>
+    <div class="body">${t.body}</div>
+    <div class="counter"><b>HOW TO DEFEND &#8594;</b> ${t.counter}</div>
+    <div class="foot">
+      <span class="hintline">Game paused &#183; full detail in the playbook [H]</span>
+      <button class="btn" id="intelok">UNDERSTOOD [SPACE]</button>
+    </div>
+  </div>`;
+  el.style.display='flex';
+  document.getElementById('intelok').addEventListener('click',closeIntel);
+  beep(300,.1,'triangle',.04);
+}
+function closeIntel(){
+  document.getElementById('intel').style.display='none';
+  intelOpen=false;
+  if(intelQueue.length){ showIntel(); return; }
+  if(intelPaused){ intelPaused=false; if(paused) togglePause(); }
+}
+
+/* ══════════════ HUD ══════════════ */
+function updHUD(){
+  document.getElementById('ramv').textContent=Math.floor(ram);
+  document.getElementById('wavev').textContent=wave;
+  document.getElementById('drain').style.display=attackers.some(a=>ATK[a.kind].drain)?'inline':'none';
+  const p=document.getElementById('phase');
+  if(phase==='prep') p.textContent=`BUILD PHASE — ${Math.ceil(phaseT)}s`;
+  else if(phase==='rest') p.textContent=`WAVE ${wave+1} IN ${Math.ceil(phaseT)}s`;
+  else p.textContent=`HOSTILE: ${queue.length+attackers.length}`;
+}
+function refreshCards(){
+  const nw=now();
+  ORDER.forEach(k=>{
+    const el=cardEls[k],d=DEF[k],cd=Math.max(0,(cooldowns[k]||0)-nw);
+    el.classList.toggle('sel',selected===k);
+    el.classList.toggle('no',ram<d.cost||cd>0);
+    el.querySelector('.cd').style.height=(cd/d.cool*100)+'%';
+  });
+}
+
+/* ══════════════ end ══════════════ */
+function finish(won){
+  ended=true; overEl.style.display='flex';
+  overEl.innerHTML=`<h2 style="color:${won?'#4ade80':'#f87171'}">${won?'SYSTEM SECURE':'SYSTEM COMPROMISED'}</h2>
+    <div class="lines">
+      WAVES SURVIVED &nbsp;${won?TOTAL_WAVES:Math.max(0,wave-1)} / ${TOTAL_WAVES}<br>
+      THREATS NEUTRALISED &nbsp;${stats.killed}<br>
+      CONTROLS LOST &nbsp;${stats.lost} &nbsp;·&nbsp; ACCOUNTS TAKEN OVER &nbsp;${stats.owned}<br>
+      RAM COLLECTED &nbsp;${stats.ramEarned} &nbsp;·&nbsp; MINED AWAY &nbsp;${Math.round(stats.drained)}<br>
+      LANE BREACHES &nbsp;${stats.breaches}
+    </div><button class="btn" id="again">REBUILD ENVIRONMENT</button>`;
+  document.getElementById('again').addEventListener('click',reset);
+  beep(won?880:110,.4,won?'sine':'sawtooth',.07);
+}
+
+/* ══════════════ reset ══════════════ */
+function reset(){
+  [...defenders,...attackers,...projectiles,...tokens].forEach(e=>e.el&&e.el.remove());
+  defenders.length=0;attackers.length=0;projectiles.length=0;tokens.length=0;
+  ram=START_RAM;wave=0;phase='prep';phaseT=PREP_TIME;
+  selected=null;sellMode=false;paused=false;ended=false;
+  dropT=DROP_EVERY;queue=[];spawnT=0;spawnGap=2.2;rails={};
+  stats={killed:0,lost:0,ramEarned:0,waves:0,owned:0,drained:0,breaches:0};
+  ORDER.forEach(k=>cooldowns[k]=0);
+  overEl.style.display='none';
+  document.getElementById('sellbtn').classList.remove('on');
+  document.getElementById('pausebtn').textContent='PAUSE [P]';
+  buildBoard(); updHUD(); refreshCards(); last=0;
+  if(!raf) raf=requestAnimationFrame(tick);
+}
+
+/* ══════════════ controls ══════════════ */
+function togglePause(){
+  if(ended) return;
+  paused=!paused; last=0;
+  document.getElementById('pausebtn').textContent=paused?'RESUME [P]':'PAUSE [P]';
+}
+function togglePlaybook(){
+  const el=document.getElementById('playbook');
+  const open=el.style.display==='block';
+  el.style.display=open?'none':'block';
+  if(!open&&!paused&&!ended) togglePause();
+  if(!open) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('pausebtn').addEventListener('click',togglePause);
+document.getElementById('sellbtn').addEventListener('click',toggleSell);
+document.getElementById('pbbtn').addEventListener('click',togglePlaybook);
+document.getElementById('mutebtn').addEventListener('click',e=>{
+  muted=!muted; e.target.textContent=muted?'SOUND OFF':'SOUND ON';
+});
+document.getElementById('brbtn').addEventListener('click',e=>{
+  briefings=!briefings; e.target.textContent=briefings?'BRIEFINGS ON':'BRIEFINGS OFF';
+});
+document.addEventListener('keydown',e=>{
+  if(intelOpen){ if(e.key===' '||e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); closeIntel(); } return; }
+  const i=['1','2','3','4','5','6','7','8'].indexOf(e.key);
+  if(i>-1) select(ORDER[i]);
+  else if(e.key==='s'||e.key==='S') toggleSell();
+  else if(e.key==='p'||e.key==='P') togglePause();
+  else if(e.key==='h'||e.key==='H'||e.key==='?') togglePlaybook();
+  else if(e.key==='Escape'){ selected=null;sellMode=false;
+    document.getElementById('sellbtn').classList.remove('on'); refreshCards(); }
+});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&!paused&&!ended&&!intelOpen) togglePause(); });
+
+function fit(){
+  const stage=document.getElementById('stage');
+  const s=Math.min(1,stage.clientWidth/BOARD_W);
+  document.getElementById('boardwrap').style.transform=`scale(${s})`;
+  stage.style.height=(BOARD_H*s)+'px';
+}
+window.addEventListener('resize',fit);
+
+/* ══════════════ playbook ══════════════ */
+document.getElementById('playbook').innerHTML=`
+<h2>1 · The model you are playing</h2>
+Each lane is an <b>attack path</b> and each column is a <b>layer of control</b>. A threat only reaches
+your data if it defeats every layer in sequence, so the question is never "which control is best" —
+it is <span class="k">what happens to the lane when the control in front fails</span>.
+<div class="note">Defense in depth is not stacking more of the same thing. It is stacking controls
+whose <b>failure modes differ</b>. Two Firewalls fail to the same 0DAY. A Firewall plus a Patch plus
+a Snapshot fail to three different things — so nothing takes the lane down in one move.</div>
+
+<h3>The five functions, on the board</h3>
+<table>
+<tr><th>Function</th><th>Board</th><th>Question it answers</th></tr>
+<tr><td>IDENTIFY</td><td>Compute Nodes</td><td>What am I actually defending, and where is it?</td></tr>
+<tr><td>PROTECT</td><td>Firewall · Patch · MFA</td><td>What stops the attack landing?</td></tr>
+<tr><td>DETECT</td><td>IDS · SIEM</td><td>Do I know it's happening, and how fast?</td></tr>
+<tr><td>RESPOND</td><td>Honeypot</td><td>Can I absorb it somewhere cheap and buy time?</td></tr>
+<tr><td>RECOVER</td><td>Snapshot</td><td>How quickly is the damage undone?</td></tr>
+</table>
+A lane missing any one function has a shape of attack it cannot survive. That is the whole game.
+
+<h2>2 · Control catalogue</h2>
+<table>
+<tr><th>Control</th><th>Cost</th><th>Effect</th><th>Real concept · placement rule</th></tr>
+<tr><td>Compute Node</td><td>50</td><td>+25 RAM / 6s</td>
+<td><b>The asset.</b> Everything else exists for these. Pays back in 12s. Put them in c0&#8211;c2 — the deepest zone — because the thing you are protecting should never sit at the perimeter.</td></tr>
+<tr><td>Firewall</td><td>100</td><td>25 dmg / 0.8s</td>
+<td><b>Preventive filtering.</b> Your only damage output. Range is the whole lane ahead, so it does not need to be at the front — put it <span class="k">behind</span> the tank and let it fire past. A control that must be touched to work is a control you will lose.</td></tr>
+<tr><td>IDS Sensor</td><td>125</td><td>&minus;45% speed, 4 cells forward</td>
+<td><b>Detection as time.</b> Slowing an attacker is the game's version of <span class="k">reducing dwell time</span> — enemies spend ~1.8&times; longer under fire, turning 31 DPS into ~56 effective DPS. Detection does not block anything; it makes everything else work harder.</td></tr>
+<tr><td>Patch Mgmt</td><td>125</td><td>+30 HP/s to all 8 neighbours</td>
+<td><b>Vulnerability management.</b> Out-heals SKID (12 dmg/s) outright, halves DDoS. Must <span class="k">touch</span> what it protects — patching is only real where it is actually applied. Useless parked behind your Nodes.</td></tr>
+<tr><td>Honeypot</td><td>75</td><td>900 HP · pulls 2 lanes · reflects 10</td>
+<td><b>Deception.</b> Cheapest HP on the board and the only control that <span class="k">changes where the attack goes</span>, dragging traffic out of neighbouring lanes. Deliberately expendable — it is placed forward because losing it costs you 75 RAM and nothing else.</td></tr>
+<tr><td>MFA Gateway</td><td>100</td><td>Destroys PHSH on contact</td>
+<td><b>Identity control.</b> Hard-counters the human attack path. <span class="w">Positional:</span> PHSH stops at whichever it meets first, so MFA must sit <span class="k">in front of</span> the Nodes it protects. Identity controls deployed behind the asset protect nothing.</td></tr>
+<tr><td>Snapshot</td><td>150</td><td>Clears locks + takeovers in its lane every 4s</td>
+<td><b>Backup / recovery.</b> Converts RNSM from a disaster into a 4-second outage and auto-remediates phished Nodes. Does not stop the attack — <span class="k">shortens the impact window</span>. This is the difference between paying a ransom and restoring.</td></tr>
+<tr><td>SIEM</td><td>200</td><td>Firewalls in lane fire 45% faster; reveals 0DAY &amp; APT</td>
+<td><b>Correlation &amp; response.</b> Expensive, produces nothing alone, and multiplies everything around it. Also strips <span class="k">evasion</span>: without it, 0DAY ignores your IDS and APT takes half damage. Signature tools miss what correlation catches.</td></tr>
+</table>
+
+<h2>3 · Threat catalogue — vectors, not monsters</h2>
+Each threat is shaped like what it is &#8212; learn the silhouette, you will not have time to read labels at wave 12.
+A one-time <b>briefing</b> interrupts play the first time each threat ever appears; this table is the permanent
+reference behind it, and a <span class="seen">&#10003;</span> marks what you have already met.
+<table>
+<tr><th>Shape</th><th>Threat</th><th>Vector</th><th>Behaviour</th><th>Counter</th></tr>
+<tr><td id="seen-skid">bug</td><td>SKID</td><td>Commodity malware, opportunistic scanning</td><td>Slow, 12 dmg/s, 150 HP</td><td>Anything. One Patch neutralises it outright. If SKID is hurting you, the lane is already broken.</td></tr>
+<tr><td id="seen-ddos">botnet hub</td><td>DDoS</td><td>Volumetric availability attack</td><td>Fast (34 px/s), 24 dmg/s, only 90 HP</td><td><b>IDS.</b> Speed <em>is</em> the attack. Halve it and Firewalls delete it in 3 packets — rate-limiting beats raw capacity.</td></tr>
+<tr><td id="seen-phish">hook + envelope</td><td>PHSH</td><td>Social engineering / credential theft</td><td><span class="w">Walks straight through every technical control</span>, takes over the first Compute Node it touches. Node stops earning until you click it.</td><td><b>MFA in front of the Nodes.</b> Nothing else in the game stops it — which is the point. Snapshot auto-remediates if you miss it.</td></tr>
+<tr><td id="seen-zero">shard</td><td>0DAY</td><td>Unpatched vulnerability + signature evasion</td><td>Fastest unit. Ignores the Honeypot entirely and is <span class="w">not slowed by IDS</span>.</td><td><b>SIEM</b> (restores detection) plus raw Firewall DPS. A deception-only lane hands it a free run at your Nodes.</td></tr>
+<tr><td id="seen-worm">segmented chain</td><td>WORM</td><td>Self-propagation / lateral movement</td><td>Clones itself into an adjacent lane every 9s, up to 2 generations.</td><td><b>Segmentation:</b> kill it fast in the lane it spawned in. One weak neighbouring lane turns one worm into four.</td></tr>
+<tr><td id="seen-ransom">padlock</td><td>RNSM</td><td>Extortion / encryption</td><td>Deals <em>no</em> damage — disables a control for 8s and walks past it. The hole it leaves is the attack.</td><td><b>Snapshot</b> (cuts 8s to ~4s) and <b>depth</b> — two Firewalls, not one. A lane with a single point of failure loses to it every time.</td></tr>
+<tr><td id="seen-miner">chipped coin</td><td>MINR</td><td>Resource hijacking / cryptojacking</td><td>420 HP, barely fights, <span class="w">drains 4 RAM/s while alive</span>. Ignoring it costs more than fighting it.</td><td>Focused DPS. The lesson: not every intrusion is loud, and the quiet ones bill you continuously.</td></tr>
+<tr><td id="seen-apt">shielded eye</td><td>APT</td><td>Advanced persistent threat</td><td>1500 HP, escorts a SKID every 6s, <span class="w">takes only 50% damage while undetected</span>.</td><td><b>IDS or SIEM in that lane first</b>, then focus fire. Waves 5, 10, 15. You cannot shoot what you cannot see.</td></tr>
+</table>
+
+<h2>4 · Why order beats quantity</h2>
+<h3>IDS goes behind the Firewall</h3>
+The slow field projects <span class="k">forward only</span> — 4 cells to the right of the sensor, nothing to its left.
+<ul>
+<li><b>IDS in front:</b> attackers are slowed on approach, then step out of the field to fight. Detection covers the part that does not matter.</li>
+<li><b>IDS behind:</b> the field covers the Firewalls, the Patch and the Honeypot. Enemies are slowed <em>while</em> chewing through them.</li>
+<li><b>When the front breaks:</b> the attacker is now standing <em>deeper</em> in the field, closer to the sensor, still slowed, while your Firewalls keep firing. The lane degrades instead of collapsing.</li>
+</ul>
+That is the whole argument for monitoring placed near the assets rather than only at the edge: perimeter-only
+detection tells you something arrived, and nothing after that.
+
+<h3>The two positional rules</h3>
+<ul>
+<li><b>MFA in front of what it protects</b> — it intercepts on contact, so a gateway behind the Node is decoration.</li>
+<li><b>Patch touching what it protects</b> — 8-neighbour range only. Coverage is what counts, not ownership of the tool.</li>
+</ul>
+
+<h3>Blast radius</h3>
+Every control you lose should cost you one thing, not the lane. Honeypot dies &rarr; you lost 75 RAM.
+Firewall dies &rarr; you lost the lane's damage. So the Honeypot goes forward and the Firewall goes back:
+<span class="k">put the cheap, replaceable thing where the damage lands.</span>
+
+<h2>5 · Standard lane</h2>
+<pre>&larr; DEEPEST ZONE                                    PERIMETER &rarr;
+  c0     c1     c2     c3     c4     c5     c6     c7    c8
+[NODE] [NODE] [ IDS] [  FW] [  FW] [PTCH] [ MFA] [HNY]   .
+                 |&lt;--------- slow field, 4 cells -------&gt;|
+                                      &lt;-- heals 8 around
+
+  Firewalls cover the whole lane from c3/c4 — they never need to be touched.
+  IDS at c2 covers the entire fight AND is the last thing standing.
+  MFA at c6 intercepts PHSH before it reaches the Nodes at c0/c1.
+  Honeypot at c7 absorbs first and pulls from the lanes above and below.
+  Add SIEM (c2, centre lane) from wave 4 — it upgrades every Firewall it sits with.</pre>
+
+<h3>Build order</h3>
+<table>
+<tr><th>Waves</th><th>Priority</th><th>Why</th></tr>
+<tr><td>Build · 1&#8211;2</td><td>2&times; Node, 2&times; Firewall, centre lanes</td><td>Economy compounds; cards recharge on a timer so RAM is not the early bottleneck.</td></tr>
+<tr><td>2&#8211;3</td><td>IDS behind the Firewalls, then MFA</td><td>DDoS arrives at 2, PHSH at 3 — MFA before wave 3 or you start losing Nodes.</td></tr>
+<tr><td>4&#8211;5</td><td>SIEM in a centre lane, Honeypots forward</td><td>0DAY at 4 and the first APT at 5 both require detection to fight at all.</td></tr>
+<tr><td>6&#8211;7</td><td>Snapshot, then Patch on the tank line</td><td>RNSM at 6, MINR at 7. Recovery and sustain, not more damage.</td></tr>
+<tr><td>8&#8211;15</td><td>Depth in every lane; sell Nodes for Firewalls</td><td>Wave budget grows quadratically — 57 at wave 1, 785 at wave 15. A line that holds wave 8 will not hold wave 12.</td></tr>
+</table>
+
+<h2>6 · Vector &rarr; control matrix</h2>
+<pre>              FW    IDS   PTCH  HNY   MFA   SNAP  SIEM
+SKID          ●●●   ●●    ●●●   ●●     ·     ·     ●
+DDoS          ●●    ●●●   ●●    ●●     ·     ·     ●●
+PHSH           ·     ·     ·     ·    ●●●   ●●●    ·
+0DAY          ●●●    ·     ●●    ·     ·     ·    ●●●
+WORM          ●●●   ●●    ●●    ●●●    ·     ·     ●
+RNSM          ●●    ●●     ·    ●●     ·    ●●●    ●
+MINR          ●●●   ●●     ·     ●     ·     ·     ●●
+APT           ●●●   ●●●   ●●    ●●●    ·     ●    ●●●
+
+●●● hard counter   ●● useful   ● marginal   · no effect</pre>
+Read the columns, not the rows: <span class="k">no control answers everything, and two of them answer
+exactly one thing each.</span> MFA is useless against seven of the eight threats and mandatory against
+the eighth. That is why "we bought a firewall" is not a security programme.
+
+<h2>7 · Rules of thumb</h2>
+<ul>
+<li><b>Every lane has one auto-remediation charge</b> — the green bar on the left edge. It clears the lane once, then goes red. A second breach there ends the run. <span class="k">Rebuild a spent lane before an untouched one.</span></li>
+<li><b>Centre lanes first.</b> A centre Honeypot pulls from the rows above and below; an edge one only pulls from one side.</li>
+<li><b>Sell (S) refunds 50%.</b> Converting Nodes into Firewalls around wave 11 is usually correct — economy stops mattering once you have enough.</li>
+<li><b>A red-flagged control is compromised, not destroyed.</b> Click it to remediate. It earns and acts nothing until you do.</li>
+<li><b>Spend during breathers.</b> 12 seconds and +25 RAM between waves; a line left unchanged for three waves is already behind the threat curve.</li>
+<li><b>Hotkeys:</b> <code>1&#8211;8</code> select · <code>S</code> sell · <code>P</code> pause · <code>H</code> playbook · <code>Esc</code> cancel.</li>
+</ul>`;
+
+buildCards(); reset(); fit();
+})();
+</script>
+</body>
+</html>
