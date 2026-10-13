@@ -33,6 +33,7 @@
   .btn{background:#16233a;border:1px solid var(--line);color:var(--ink);font:inherit;font-size:.66rem;
     padding:5px 8px;border-radius:5px;cursor:pointer;letter-spacing:.05em;}
   .btn:hover{border-color:var(--cyan);}
+  .btn:disabled{opacity:.35;cursor:not-allowed;border-color:var(--line);}
   .btn.on{border-color:var(--red);color:var(--red);}
   .btn:focus-visible,.card:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
 
@@ -841,7 +842,7 @@ function showTut(reproject){
     <div class="step"><div class="n">2</div><div class="tx">Tap a <b>card</b>, then a <b>tile</b> to install a control. Tap a control you already placed to <b>sell</b> it. Cards cost RAM and recharge on a timer.</div></div>
     <div class="step"><div class="n">3</div><div class="tx"><b>Compute Nodes</b> are what you defend and how you earn — they drop RAM tokens. <b>Tap tokens to collect them.</b></div></div>
     <div class="step"><div class="n">4</div><div class="tx">Fifteen waves, and the <b>order</b> you build in matters more than how much you build. The build-order bar above the cards tells you what is due before each wave.</div></div>
-    <div class="first"><b>New here?</b> Training is a 2-minute sandbox: place, collect, sell, remediate a phished Node, then see the build order. No waves, nothing to lose.</div>
+    <div class="first"><b>Enter a callsign to continue</b> — it is your name on the leaderboard.<br><b>New here?</b> Training is a 2-minute sandbox: place, collect, sell, remediate a phished Node, then see the build order. No waves, nothing to lose.</div>
     ${nameField('tutname',nameVal)}
     <div class="foot">
       <button class="btn go" id="tuttrain">${trainLbl}</button>
@@ -853,10 +854,18 @@ function showTut(reproject){
   document.getElementById('tuttrain').addEventListener('click',()=>closeTut('train'));
   document.getElementById('tutgo').addEventListener('click',()=>closeTut('skip'));
   document.getElementById('tutpb').addEventListener('click',()=>closeTut('pb'));
-  document.getElementById('tutname').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); closeTut(runActive()?'skip':'train'); } });
+  const inp=document.getElementById('tutname');
+  const gate=()=>{
+    const ok=NAME_RE.test(inp.value.trim());
+    el.querySelectorAll('.foot .btn').forEach(b=>b.disabled=!ok);
+    if(ok) document.getElementById('tutname-err').textContent='';
+  };
+  inp.addEventListener('input',gate); gate();
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); closeTut(runActive()?'skip':'train'); } });
+  if(!reproject&&!NAME_RE.test(inp.value.trim())) inp.focus();
 }
 function closeTut(mode){
-  if(!readName('tutname',false)) return;
+  if(!readName('tutname',true)) return;   // a callsign is required before training or playing
   document.getElementById('tut').style.display='none';
   tutOpen=false; markTut();
   if(tutPaused){ tutPaused=false; if(paused) togglePause(); }

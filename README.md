@@ -58,7 +58,7 @@ and ticks it off once it is placed.
 
 ## Leaderboard
 
-Players pick a **callsign** (2–16 letters, digits, `_` or `-`). At game over the score
+Players must pick a **callsign** before training or playing (2–16 letters, digits, `_` or `-`). At game over the score
 (`waves survived × 1000 + kills`, kills capped at 999) is posted to `/api/scores`,
 a Vercel function that keeps each callsign's best score in Upstash Redis.
 
