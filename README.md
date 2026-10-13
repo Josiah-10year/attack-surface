@@ -44,21 +44,41 @@ phone at near-full size rather than being scaled down to ~35px cells. Game logic
 untouched -- only the projection changes, and the board re-projects live if you
 rotate mid-game. Hotkey labels hide themselves on touch devices.
 
-First-time players get a short briefing explaining the goal, the economy, and their
-first two moves, plus a hint bar that tracks those placements. It is dismissible,
-remembered in `localStorage`, and replayable from **HOW TO PLAY**.
+## Training and build order
+
+First-time players get a short briefing and the option of a **training range**: a
+sandbox (2000 RAM, no cooldowns, no waves) that walks through placing a Node,
+collecting RAM, adding a Firewall, putting an IDS behind it, remediating a phished
+Node, countering phishing with MFA, and selling a control, then ends on the build
+order. Replay it any time from **HOW TO PLAY**.
+
+During a real run, the **build-order bar** above the cards names the control due
+before the next wave (IDS before DDoS at wave 2, MFA before PHSH at wave 3, and so on)
+and ticks it off once it is placed.
+
+## Leaderboard
+
+Players pick a **callsign** (2–16 letters, digits, `_` or `-`). At game over the score
+(`waves survived × 1000 + kills`, kills capped at 999) is posted to `/api/scores`,
+a Vercel function that keeps each callsign's best score in Upstash Redis.
+
+To turn on the global board, add **Upstash for Redis** from the Vercel Marketplace and
+connect it to this project (it sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`), then
+redeploy. Without storage the endpoint returns 503 and the game falls back to a board
+saved on the player's own device.
 
 ## Controls
 
 | Key | Action |
 |---|---|
 | `1`–`8` | Select a control |
-| `S` | Sell mode (50% refund) |
+| `S` | Sell mode: tap controls to sell them (50% refund) |
 | `P` | Pause |
 | `H` | Open the playbook |
 | `Esc` | Cancel selection |
 
-Click a card, then a tile to place. Click RAM tokens to collect them. A red-flagged
+Click a card, then a tile to place. Click a placed control (with no card selected) to
+open its bar and **SELL** it. Click RAM tokens to collect them. A red-flagged
 control has been compromised — click it to remediate.
 
 ## Deploying

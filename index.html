@@ -97,7 +97,7 @@
     color:var(--cyan);text-shadow:0 0 14px rgba(56,189,248,.6);pointer-events:none;z-index:8;text-align:center;}
   #banner .b1{font-size:1.4rem;letter-spacing:.2em;}
   #banner .b2{font-size:.68rem;letter-spacing:.12em;color:var(--dim);margin-top:6px;}
-  #over{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;align-items:center;
+  #over{position:absolute;inset:0;display:none;flex-direction:column;justify-content:flex-start;align-items:center;overflow-y:auto;
     background:rgba(2,6,23,.94);z-index:9;text-align:center;padding:16px;}
   #over h2{margin:0 0 6px;font-size:1.5rem;letter-spacing:.18em;}
   #over .lines{font-size:.74rem;color:var(--dim);line-height:1.9;margin-bottom:14px;}
@@ -167,6 +167,51 @@
   #hint{display:none;background:#0c1a12;border:1px solid #1d3a28;border-radius:6px;
     padding:7px 9px;margin-bottom:8px;font-size:.64rem;letter-spacing:.03em;color:#a7d8ba;line-height:1.55;}
   #hint b{color:var(--ram);}
+  #hint .ok{color:var(--ram);font-weight:800;}
+  #hint .eye{display:block;font-size:.55rem;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-bottom:2px;}
+
+  /* ---------- selected-control bar / sell mode ---------- */
+  .def{cursor:pointer;}
+  .def.picked{outline:2px solid var(--cyan);outline-offset:2px;}
+  #board.selling .def:hover,#board.selling .def:active{outline:2px solid var(--red);outline-offset:2px;}
+  #ctlbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;background:#0a1120;border:1px solid var(--line);
+    border-radius:6px;padding:6px 9px;margin-bottom:8px;font-size:.64rem;letter-spacing:.04em;color:#c2d1e5;}
+  #ctlbar.sell{border-color:var(--red);background:#1a0c10;color:#f3c4c4;}
+  #ctlbar .grow{flex:1 1 auto;}
+  #ctlbar .btn.red{border-color:var(--red);color:var(--red);}
+
+  /* ---------- training coach ---------- */
+  #hint.coach{border-color:var(--cyan);background:#08182a;color:#cfe3f5;font-size:.68rem;}
+  #hint.coach b{color:var(--cyan);}
+  #hint .row{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+  #hint table{width:100%;border-collapse:collapse;font-size:.6rem;margin:6px 0 2px;}
+  #hint td,#hint th{text-align:left;padding:3px 6px 3px 0;border-bottom:1px solid #16223a;vertical-align:top;}
+  #hint th{color:var(--dim);font-weight:600;}
+  #hint td:first-child{white-space:nowrap;color:var(--ink);font-weight:700;}
+  .card.coach{border-color:var(--cyan);box-shadow:0 0 0 2px var(--cyan);animation:coach 1s infinite;}
+  @keyframes coach{50%{box-shadow:0 0 0 2px var(--cyan),0 0 16px rgba(56,189,248,.8);}}
+  .ghost{position:absolute;top:0;left:0;width:62px;height:62px;margin:-4px;border:2px dashed var(--cyan);border-radius:5px;
+    z-index:3;pointer-events:none;animation:coach 1s infinite;}
+
+  /* ---------- callsign + leaderboard ---------- */
+  .field{display:flex;gap:7px;align-items:center;margin-top:11px;flex-wrap:wrap;font-size:.62rem;color:var(--dim);letter-spacing:.08em;}
+  .field input{flex:1 1 140px;background:#060c18;border:1px solid var(--line);border-radius:5px;color:var(--ink);
+    font:inherit;font-size:.78rem;padding:6px 8px;letter-spacing:.06em;}
+  .field input:focus{outline:2px solid var(--cyan);outline-offset:1px;}
+  .err{color:var(--red);font-size:.58rem;min-height:1em;margin-top:4px;}
+  #lbm{position:fixed;inset:0;display:none;justify-content:center;align-items:center;
+    background:rgba(2,6,23,.93);z-index:13;padding:14px;overflow-y:auto;}
+  #lbm .box{width:100%;max-width:420px;background:#0a1120;border:1px solid var(--amber);
+    border-radius:8px;padding:15px 16px;box-shadow:0 0 34px rgba(251,191,36,.18);}
+  #lbm .eyebrow{font-size:.55rem;letter-spacing:.22em;color:var(--amber);text-transform:uppercase;}
+  #lbm h4{margin:3px 0 8px;font-size:1rem;letter-spacing:.12em;}
+  .lbt{width:100%;border-collapse:collapse;font-size:.66rem;margin:6px 0;}
+  .lbt th{text-align:left;color:var(--dim);font-weight:600;border-bottom:1px solid var(--line);padding:4px 6px 4px 0;}
+  .lbt td{padding:4px 6px 4px 0;border-bottom:1px solid #16223a;}
+  .lbt tr.me td{color:var(--ram);}
+  .lbsrc{font-size:.55rem;color:var(--dim);letter-spacing:.06em;}
+  #over .lbt{max-width:340px;text-align:left;}
+  #over .score{font-size:1.05rem;color:var(--amber);letter-spacing:.14em;margin-bottom:8px;}
 
   /* ---------- touch / portrait ---------- */
   .cell,.card,.token,.btn,.def{touch-action:manipulation;}
@@ -208,7 +253,9 @@
     <div class="stat">WAVE <b id="wavev">0</b>/15</div>
     <div id="phase">BUILD PHASE — 20s</div>
     <div class="btns">
+      <button class="btn" id="opbtn" title="Change callsign">OP: ---</button>
       <button class="btn" id="helpbtn">HOW TO PLAY</button>
+      <button class="btn" id="lbbtn">LEADERBOARD</button>
       <button class="btn" id="sellbtn">SELL<span class="kb"> [S]</span></button>
       <button class="btn" id="pausebtn">PAUSE<span class="kb"> [P]</span></button>
       <button class="btn" id="mutebtn">SOUND ON</button>
@@ -221,17 +268,20 @@
 
   <div id="cards"></div>
 
+  <div id="ctlbar"></div>
+
   <div id="stage"><div id="boardwrap"><div id="board">
     <div id="banner"></div><div id="over"></div>
   </div></div></div>
 
-  <div id="tip">Tap a card, then a tile · tap RAM tokens to collect · a <span style="color:#f87171">red-flagged control is compromised — tap it to remediate</span> · each lane holds one auto-remediation charge</div>
+  <div id="tip">Tap a card, then a tile · tap a placed control to sell it · tap RAM tokens to collect · a <span style="color:#f87171">red-flagged control is compromised — tap it to remediate</span> · each lane holds one auto-remediation charge</div>
 
   <div id="playbook"></div>
 </div>
 
 <div id="intel"></div>
 <div id="tut"></div>
+<div id="lbm"></div>
 
 <script>
 (() => {
@@ -343,7 +393,7 @@ const WAVE_NOTE={1:'COMMODITY MALWARE',2:'VOLUMETRIC FLOOD',3:'SOCIAL ENGINEERIN
 const board=document.getElementById('board');
 const bannerEl=document.getElementById('banner');
 const overEl=document.getElementById('over');
-let ram,wave,phase,phaseT,selected,sellMode,paused,ended,muted=false;
+let ram,wave,phase,phaseT,selected,sellMode,paused,ended,muted=false,training=false;
 let dropT,queue,spawnT,spawnGap,rails,stats;
 const defenders=[],attackers=[],projectiles=[],tokens=[];
 const cooldowns={},cardEls={};
@@ -414,35 +464,77 @@ const detected=r=>rowHas(r,'ids')||rowHas(r,'siem');
 /* ══════════════ placement ══════════════ */
 function select(k){
   if(ended||!k) return;
-  sellMode=false; document.getElementById('sellbtn').classList.remove('on');
+  setSell(false); closeCtl();
   selected=(selected===k)?null:k; refreshCards();
+}
+function setSell(on){
+  sellMode=on;
+  document.getElementById('sellbtn').classList.toggle('on',on);
+  board.classList.toggle('selling',on);
+  renderCtl();
 }
 function toggleSell(){
   if(ended) return;
-  sellMode=!sellMode; selected=null;
-  document.getElementById('sellbtn').classList.toggle('on',sellMode); refreshCards();
+  selected=null; picked=null; setSell(!sellMode); refreshCards();
+}
+const refund=d=>Math.floor(DEF[d.type].cost/2);
+function sellDefender(d){
+  ram+=refund(d); stats.sold++; removeDefender(d); beep(220,.08,'sine'); updHUD(); refreshCards(); updHint();
 }
 function cellClick(r,c){
   if(ended||paused) return;
   const occ=defenders.find(d=>d.row===r&&d.col===c);
   if(occ&&occ.owned){ occ.owned=false; occ.el.classList.remove('owned'); beep(700,.1,'sine'); return; }
-  if(sellMode){
-    if(occ){ ram+=Math.floor(DEF[occ.type].cost/2); removeDefender(occ); beep(220,.08,'sine'); updHUD(); }
-    return;
-  }
+  if(sellMode){ if(occ) sellDefender(occ); return; }
+  if(occ&&!selected){ pickCtl(occ); return; }   // tap a placed control → its action bar (sell)
+  closeCtl();
   if(!selected) return;
   const d=DEF[selected];
-  if(occ||ram<d.cost||cooldowns[selected]>now()){ beep(120,.08,'sine',.03); return; }
-  ram-=d.cost; cooldowns[selected]=now()+d.cool;
+  if(occ||ram<d.cost||(!training&&cooldowns[selected]>now())){ beep(120,.08,'sine',.03); return; }
+  ram-=d.cost; if(!training) cooldowns[selected]=now()+d.cool;
   const el=document.createElement('div');
   el.className=`def ${d.cls}`;
   el.innerHTML=`${ART[d.art]}<div class="hp"><i style="width:100%"></i></div>`;
+  // the appliance sits on top of its tile, so it must forward taps itself
+  el.addEventListener('click',e=>{ e.stopPropagation(); cellClick(r,c); });
   place(el,cellX(c),cellY(r)); board.appendChild(el);
   defenders.push({type:selected,row:r,col:c,x:cellX(c),y:cellY(r),hp:d.hp,maxHp:d.hp,
     el,bar:el.querySelector('.hp i'),t:0,lockUntil:0,owned:false});
   beep(520,.06,'triangle'); selected=null; updHUD(); refreshCards(); updHint();
 }
-function removeDefender(d){ d.el.remove(); const i=defenders.indexOf(d); if(i>-1) defenders.splice(i,1); }
+function removeDefender(d){
+  d.el.remove(); const i=defenders.indexOf(d); if(i>-1) defenders.splice(i,1);
+  if(picked===d) closeCtl();
+}
+
+/* ══════════════ selected-control bar ══════════════ */
+let picked=null;
+function pickCtl(d){
+  if(picked) picked.el.classList.remove('picked');
+  picked=(picked===d)?null:d;
+  if(picked) picked.el.classList.add('picked');
+  renderCtl();
+}
+function closeCtl(){ if(picked){ picked.el.classList.remove('picked'); picked=null; } renderCtl(); }
+function renderCtl(){
+  const bar=document.getElementById('ctlbar');
+  bar.classList.toggle('sell',sellMode);
+  if(sellMode){
+    bar.innerHTML=`<span class="grow"><b>SELL MODE</b> — tap any control on the board to sell it for a 50% refund.</span>
+      <button class="btn" id="ctldone">DONE</button>`;
+    bar.style.display='flex';
+    document.getElementById('ctldone').addEventListener('click',()=>setSell(false));
+    return;
+  }
+  if(!picked){ bar.style.display='none'; return; }
+  const d=DEF[picked.type];
+  bar.innerHTML=`<span class="grow"><b>${d.name}</b> · lane ${picked.row+1}, column ${picked.col+1} · HP ${Math.ceil(picked.hp)}/${picked.maxHp}</span>
+    <button class="btn red" id="ctlsell">SELL +${refund(picked)} RAM</button>
+    <button class="btn" id="ctlx">CANCEL</button>`;
+  bar.style.display='flex';
+  document.getElementById('ctlsell').addEventListener('click',()=>{ if(picked&&!ended) sellDefender(picked); });
+  document.getElementById('ctlx').addEventListener('click',closeCtl);
+}
 
 /* ══════════════ tokens ══════════════ */
 function dropToken(x,y){
@@ -451,7 +543,7 @@ function dropToken(x,y){
   place(el,x,y); board.appendChild(el);
   const t={el,x,y,born:now()};
   el.addEventListener('click',e=>{
-    e.stopPropagation(); ram+=TOKEN_VALUE; stats.ramEarned+=TOKEN_VALUE; beep(880,.07,'sine');
+    e.stopPropagation(); ram+=TOKEN_VALUE; stats.ramEarned+=TOKEN_VALUE; stats.tokens++; beep(880,.07,'sine');
     el.remove(); const i=tokens.indexOf(t); if(i>-1) tokens.splice(i,1); updHUD(); refreshCards();
   });
   tokens.push(t);
@@ -535,11 +627,13 @@ function update(dt){
       if(wave>=TOTAL_WAVES){ finish(true); return; }
       phase='rest'; phaseT=BREATHER; ram+=25; stats.ramEarned+=25; beep(760,.12,'sine',.05);
     }
+  }else if(phase==='training'){
+    tutTick();
   }
 
   dropT-=dt;
   if(dropT<=0){ dropT=DROP_EVERY; dropToken(40+Math.random()*(BOARD_W-110),30+Math.random()*(BOARD_H-80)); }
-  for(let i=tokens.length-1;i>=0;i--) if(nw-tokens[i].born>TOKEN_LIFE){ tokens[i].el.remove(); tokens.splice(i,1); }
+  for(let i=tokens.length-1;i>=0;i--) if(!training&&nw-tokens[i].born>TOKEN_LIFE){ tokens[i].el.remove(); tokens.splice(i,1); }
 
   /* ── controls ── */
   defenders.forEach(d=>{
@@ -638,6 +732,7 @@ function update(dt){
     }
     place(a.el,a.x,a.y);
 
+    if(a.x<2&&training){ kill(a); continue; }   // the training range has no rails to lose
     if(a.x<2){
       const rail=rails[a.row];
       if(rail.armed){
@@ -696,54 +791,297 @@ function closeIntel(){
   if(intelPaused){ intelPaused=false; if(paused) togglePause(); }
 }
 
+/* ══════════════ callsign ══════════════ */
+const NAME_KEY='attacksurface.callsign.v1';
+const NAME_RE=/^[A-Za-z0-9_-]{2,16}$/;
+let callsign=(()=>{ try{ return localStorage.getItem(NAME_KEY)||''; }catch(e){ return ''; } })();
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function setCallsign(n){
+  callsign=n; try{ localStorage.setItem(NAME_KEY,n); }catch(e){}
+  document.getElementById('opbtn').textContent='OP: '+(n||'---');
+}
+function nameField(id,value){
+  return `<div class="field">CALLSIGN <input id="${id}" maxlength="16" autocomplete="off" spellcheck="false"
+    placeholder="2–16: letters, digits, _ or -" value="${esc(value)}"></div><div class="err" id="${id}-err"></div>`;
+}
+/* Validates the field and stores it. An empty optional field is accepted and changes nothing. */
+function readName(id,required){
+  const inp=document.getElementById(id); if(!inp) return true;
+  const v=inp.value.trim();
+  if(!v&&!required) return true;
+  if(!NAME_RE.test(v)){
+    document.getElementById(id+'-err').textContent='Callsign must be 2–16 characters: letters, digits, _ or -';
+    inp.focus(); return false;
+  }
+  setCallsign(v); return true;
+}
+
 /* ══════════════ onboarding ══════════════ */
 let tutOpen=false,tutPaused=false;
 const TUT_KEY='attacksurface.onboarded.v1';
 function seenTut(){ try{ return localStorage.getItem(TUT_KEY)==='1'; }catch(e){ return false; } }
 function markTut(){ try{ localStorage.setItem(TUT_KEY,'1'); }catch(e){} }
+const runActive=()=>!training&&!ended&&(wave>0||defenders.length>0);
 
 function showTut(reproject){
   const el=document.getElementById('tut');
+  const typed=document.getElementById('tutname');
+  const nameVal=typed?typed.value:callsign;
   if(!reproject){
     tutOpen=true;
     if(!paused&&!ended){ tutPaused=true; togglePause(); }
   }
   const from=PORTRAIT?'climb from the bottom of the board':'advance from the right edge';
-  const zone=PORTRAIT?'the top rows':'the left-hand columns';
+  const trainLbl=training?'RESTART TRAINING':runActive()?'TRAINING (ENDS THIS RUN)':'START TRAINING';
+  const skipLbl=training?'BACK TO TRAINING':runActive()?'RESUME':'SKIP — JUST PLAY';
   el.innerHTML=`<div class="box">
     <div class="eyebrow">Briefing &#183; before you start</div>
     <h4>ATTACK SURFACE</h4>
     <div class="step"><div class="n">1</div><div class="tx">Five lanes are five <b>attack paths</b>. Threats ${from} and try to reach the far end. Each lane absorbs <b>one</b> breach; the second one ends the run.</div></div>
-    <div class="step"><div class="n">2</div><div class="tx">Tap a <b>card</b>, then tap a <b>tile</b> to install a control. Every card costs RAM and recharges on its own timer, so you are limited by time as much as money.</div></div>
-    <div class="step"><div class="n">3</div><div class="tx"><b>Compute Nodes</b> are what you are defending and also how you earn — they drop RAM tokens. <b>Tap tokens to collect them</b> before they expire.</div></div>
-    <div class="step"><div class="n">4</div><div class="tx">Fifteen waves. Each new threat pauses the game with a <b>briefing</b> telling you what counters it, and the <b>playbook</b> keeps every detail for later.</div></div>
-    <div class="first"><b>First move:</b> put a Compute Node in ${zone}, then a Firewall further along the same lane. Nodes earn, Firewalls are your only damage. You have 500 RAM and 20 seconds.</div>
+    <div class="step"><div class="n">2</div><div class="tx">Tap a <b>card</b>, then a <b>tile</b> to install a control. Tap a control you already placed to <b>sell</b> it. Cards cost RAM and recharge on a timer.</div></div>
+    <div class="step"><div class="n">3</div><div class="tx"><b>Compute Nodes</b> are what you defend and how you earn — they drop RAM tokens. <b>Tap tokens to collect them.</b></div></div>
+    <div class="step"><div class="n">4</div><div class="tx">Fifteen waves, and the <b>order</b> you build in matters more than how much you build. The build-order bar above the cards tells you what is due before each wave.</div></div>
+    <div class="first"><b>New here?</b> Training is a 2-minute sandbox: place, collect, sell, remediate a phished Node, then see the build order. No waves, nothing to lose.</div>
+    ${nameField('tutname',nameVal)}
     <div class="foot">
-      <button class="btn go" id="tutgo">START BUILDING</button>
-      <button class="btn" id="tutpb">READ THE PLAYBOOK</button>
+      <button class="btn go" id="tuttrain">${trainLbl}</button>
+      <button class="btn" id="tutgo">${skipLbl}</button>
+      <button class="btn" id="tutpb">PLAYBOOK</button>
     </div>
   </div>`;
   el.style.display='flex';
-  document.getElementById('tutgo').addEventListener('click',closeTut);
-  document.getElementById('tutpb').addEventListener('click',()=>{ closeTut(); togglePlaybook(); });
+  document.getElementById('tuttrain').addEventListener('click',()=>closeTut('train'));
+  document.getElementById('tutgo').addEventListener('click',()=>closeTut('skip'));
+  document.getElementById('tutpb').addEventListener('click',()=>closeTut('pb'));
+  document.getElementById('tutname').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); closeTut(runActive()?'skip':'train'); } });
 }
-function closeTut(){
+function closeTut(mode){
+  if(!readName('tutname',false)) return;
   document.getElementById('tut').style.display='none';
   tutOpen=false; markTut();
   if(tutPaused){ tutPaused=false; if(paused) togglePause(); }
+  if(mode==='train') startTraining();
+  else if(mode==='pb') togglePlaybook();
   updHint();
 }
-/* Contextual nudge during the opening build phase only. */
+
+/* ══════════════ training range ══════════════
+   A scripted sandbox run before the real game: no waves, no cooldowns, no rails to lose.
+   Each step highlights a card and/or a tile and advances itself when its condition is met. */
+const TRAIN_RAM=2000;
+let T={}, tStep=-1, tAdvanceAt=0, ghostEl=null, ghostCell=null;
+const laneOf=type=>defenders.filter(d=>d.type===type&&d.row===T.lane);
+const tNode=()=>laneOf('srv')[0];
+const tFwCol=()=>{ const f=laneOf('fw'); return f.length?Math.max(...f.map(d=>d.col)):-1; };
+function freeCol(from,to){
+  for(let c=Math.max(0,from);c<=Math.min(COLS-1,to);c++)
+    if(!defenders.some(d=>d.row===T.lane&&d.col===c)) return c;
+  return -1;
+}
+const spawnAt=(kind,x)=>spawn(kind,T.lane,Math.min(BOARD_W-30,x));
+
+const BUILD_ROWS=[
+  ['Build · 1–2','2× Node, 2× Firewall, centre lanes','Economy compounds; cards recharge on a timer, so RAM is not the early bottleneck.'],
+  ['2–3','IDS behind the Firewalls, then MFA','DDoS arrives at 2, PHSH at 3 — MFA before wave 3 or you start losing Nodes.'],
+  ['4–5','SIEM in a centre lane, Honeypots forward','0DAY at 4 and the first APT at 5 both need detection to fight at all.'],
+  ['6–7','Snapshot, then Patch on the tank line','RNSM at 6, MINR at 7. Recovery and sustain, not more damage.'],
+  ['8–15','Depth in every lane; sell Nodes for Firewalls','Wave budget grows quadratically — 57 at wave 1, 785 at wave 15.']
+];
+
+const TSTEPS=[
+  {title:'Training range', next:'BEGIN',
+   text:()=>`A sandbox with ${TRAIN_RAM} RAM, no card cooldowns and no waves — nothing here can end a run. You will place, collect, defend, remediate and sell, then see the build order for the real game.`},
+  {title:'Install an asset', card:'srv', cell:()=>[2,0],
+   text:()=>`Tap the <b>Compute Node</b> card, then the highlighted tile. Nodes are the assets you defend <i>and</i> your only income, so they live in the deepest columns.`,
+   done:()=>{ const n=defenders.find(d=>d.type==='srv'); if(n){ T.lane=n.row; return true; } }},
+  {title:'Collect RAM',
+   enter:()=>{ const n=tNode(); T.tok=stats.tokens; if(n) dropToken(n.x+14,n.y+14); },
+   text:()=>`Your Node just dropped a pulsing green <b>RAM token</b>. Tap it to collect. In a real run, tokens expire after ${TOKEN_LIFE}s.`,
+   done:()=>stats.tokens>T.tok},
+  {title:'Add firepower', card:'fw', cell:()=>{ const n=tNode(), c=freeCol((n?n.col:0)+3,COLS-1); return c<0?null:[T.lane,c]; },
+   text:()=>`Tap <b>Firewall</b>, then a tile further along the <b>same lane</b>. Firewalls are your only damage and shoot down the whole lane ahead of them — they never need to be at the front.`,
+   done:()=>{ const n=tNode(); return n&&laneOf('fw').some(d=>d.col>n.col); }},
+  {title:'First contact',
+   enter:()=>spawnAt('skid',cellX(COLS-2)),
+   text:()=>`A <b>SKID</b> (commodity malware) is coming down your lane. Firewalls fire at anything ahead of them — watch it get handled.`,
+   done:()=>!attackers.length},
+  {title:'Detection goes behind', card:'ids',
+   cell:()=>{ const n=tNode(), c=freeCol((n?n.col:0)+1,tFwCol()-1); return c<0?null:[T.lane,c]; },
+   text:()=>`Place an <b>IDS Sensor</b> <b>behind</b> the Firewall — between it and your Node. Its slow field projects 4 cells <i>forward</i>, so from behind it covers the whole fight. DDoS arrives at wave 2; this is its counter.`,
+   done:()=>{
+     const ids=laneOf('ids'); if(!ids.length) return false;
+     if(ids.some(d=>d.col<tFwCol())) return true;
+     const n=tNode(); return freeCol((n?n.col:0)+1,tFwCol()-1)<0;   // no room behind: accept anywhere in the lane
+   }},
+  {title:'The human attack path',
+   enter:()=>{ const n=tNode(); spawnAt('phish',(n?n.x:0)+PITCH+20); },
+   text:()=>`<b>PHSH</b> (phishing) targets people, not the network — it walks straight past Firewalls and IDS. One just slipped through. Watch your Node.`,
+   done:()=>{
+     if(defenders.some(d=>d.owned)) return true;
+     if(!attackers.some(a=>a.kind==='phish')){ const n=tNode(); if(n) spawnAt('phish',n.x+PITCH+20); }
+   }},
+  {title:'Remediate',
+   text:()=>`That Node is <span style="color:var(--red)">compromised</span> — red flag, earning nothing. <b>Tap it</b> to remediate. Do this fast in a real run.`,
+   done:()=>!defenders.some(d=>d.owned)},
+  {title:'Identity control', card:'mfa',
+   cell:()=>{ const n=tNode(), c=freeCol((n?n.col:0)+1,COLS-1); return c<0?null:[T.lane,c]; },
+   text:()=>`<b>MFA Gateway</b> is the counter. Place it <b>in front of</b> the Node — between the Node and the threats. PHSH stops at the first Node or MFA it touches, so MFA behind the Node protects nothing.`,
+   done:()=>{ const n=tNode(); return n&&laneOf('mfa').some(d=>d.col>n.col); }},
+  {title:'Test it',
+   enter:()=>{ const m=laneOf('mfa')[0]; spawnAt('phish',(m?m.x:0)+40); },
+   text:()=>`Another PHSH down the same path. This time the MFA Gateway stops it on contact.`,
+   done:()=>!attackers.some(a=>a.kind==='phish')},
+  {title:'Selling',
+   enter:()=>{ T.sold=stats.sold; },
+   cell:()=>{ const i=laneOf('ids')[0]; return i?[i.row,i.col]:null; },
+   text:()=>`Plans change. With no card selected, <b>tap the IDS Sensor</b> — a bar appears above the board with <b>SELL</b> (50% refund). The SELL button / <b>[S]</b> sells several in a row.`,
+   done:()=>stats.sold>T.sold},
+  {title:'The build order', next:'START THE REAL GAME',
+   text:()=>`You now know every move. What wins is the <b>order</b>: each control lands just before the threat it counters.
+     <table><tr><th>Waves</th><th>Priority</th><th>Why</th></tr>${BUILD_ROWS.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table>
+     The <b>build-order bar</b> above the cards will tell you what is due before every wave.`}
+];
+
+function placeGhost(cell){
+  if(!cell) return;
+  ghostEl=document.createElement('div'); ghostEl.className='ghost';
+  ghostCell={x:cellX(cell[1]),y:cellY(cell[0])};
+  place(ghostEl,ghostCell.x,ghostCell.y); board.appendChild(ghostEl);
+}
+function clearCoachMarks(){
+  ORDER.forEach(k=>cardEls[k]&&cardEls[k].classList.remove('coach'));
+  if(ghostEl){ ghostEl.remove(); ghostEl=null; ghostCell=null; }
+}
+function goStep(i){
+  clearCoachMarks(); tStep=i; tAdvanceAt=0;
+  const s=TSTEPS[i]; if(!s) return endTraining();
+  if(s.enter) s.enter();
+  if(s.card) cardEls[s.card].classList.add('coach');
+  if(s.cell) placeGhost(s.cell());
+  renderCoach(false);
+}
+function renderCoach(ok){
+  const s=TSTEPS[tStep], h=document.getElementById('hint'), last=tStep===TSTEPS.length-1;
+  h.classList.add('coach'); hintCache=null;
+  h.innerHTML=`<span class="eye">Training · step ${tStep+1} of ${TSTEPS.length}${ok?' · <span class="ok">&#10003; done</span>':''}</span>
+    <b>${s.title}.</b> ${s.text()}
+    <div class="row">${s.next?`<button class="btn" id="tnext" style="border-color:var(--ram);color:var(--ram)">${s.next}</button>`:''}
+    <button class="btn" id="tskip">${last?'REPLAY TRAINING':'SKIP TRAINING'}</button></div>`;
+  h.style.display='block';
+  if(s.next) document.getElementById('tnext').addEventListener('click',()=>goStep(tStep+1));
+  document.getElementById('tskip').addEventListener('click',()=>{ if(last) startTraining(); else endTraining(); });
+}
+function tutTick(){
+  const s=TSTEPS[tStep]; if(!s) return;
+  if(tAdvanceAt){ if(now()>=tAdvanceAt) goStep(tStep+1); return; }
+  if(s.done&&s.done()){ beep(980,.1,'sine',.05); clearCoachMarks(); renderCoach(true); tAdvanceAt=now()+.9; }
+}
+function startTraining(){
+  reset();
+  training=true; phase='training'; ram=TRAIN_RAM; T={lane:2};
+  goStep(0); updHUD(); refreshCards();
+}
+function endTraining(){
+  reset(); markTut();   // reset() also clears training state
+  banner('TRAINING COMPLETE','BUILD PHASE — 20s');
+}
+
+/* ══════════════ build-order advisor ══════════════
+   During a real run the hint bar names the control due before the next wave and ticks it off once placed. */
+const cnt=t=>defenders.filter(d=>d.type===t&&!d.owned).length;
+const ADVICE={
+  1:{head:'2× Compute Node, 2× Firewall',text:'Nodes in the deepest columns of the centre lanes, Firewalls further along the same lanes. Economy compounds.',done:()=>cnt('srv')>=2&&cnt('fw')>=2},
+  2:{head:'IDS Sensor behind your Firewalls',text:'DDoS arrives at wave 2 — fast and fragile. Slow it and the Firewalls delete it.',done:()=>cnt('ids')>=1},
+  3:{head:'MFA Gateway in front of your Nodes',text:'PHSH arrives at wave 3 and walks through every technical control. Without MFA you start losing Nodes.',done:()=>cnt('mfa')>=1},
+  4:{head:'SIEM in a centre lane',text:'0DAY arrives at wave 4 and ignores IDS unless a SIEM is in its lane.',done:()=>cnt('siem')>=1},
+  5:{head:'Honeypots forward',text:'First APT at wave 5: 1500 HP, half damage unless IDS or SIEM is in its lane. Honeypots soak and pull it.',done:()=>cnt('honey')>=1},
+  6:{head:'Snapshot',text:'RNSM arrives at wave 6 and disables controls. Snapshot halves the outage and fixes phished Nodes.',done:()=>cnt('bkup')>=1},
+  7:{head:'Patch Mgmt on the tank line',text:'MINR arrives at wave 7 and drains RAM while alive. Sustain the line instead of adding damage.',done:()=>cnt('patch')>=1},
+  8:{head:'Depth in every lane',text:'The threat budget grows quadratically (785 by wave 15). Around wave 11, sell Nodes for Firewalls.',done:()=>false}
+};
+let hintCache=null;
 function updHint(){
+  if(training) return;   // the training coach owns the bar
   const h=document.getElementById('hint');
-  if(ended||wave>0||tutOpen){ h.style.display='none'; return; }
-  const nSrv=defenders.filter(d=>d.type==='srv').length;
-  const nFw=defenders.filter(d=>d.type==='fw').length;
-  let msg;
-  if(!nSrv) msg='<b>Step 1</b> — tap the <b>Compute Node</b> card, then a tile at your end of a lane. Nodes drop the RAM everything else is paid for with.';
-  else if(!nFw) msg='<b>Step 2</b> — tap <b>Firewall</b>, then a tile further along that same lane. It fires down the whole lane, so it does not need to be at the front.';
-  else msg='<b>You are set up.</b> Tap RAM tokens to collect them, and spend the breather between waves reinforcing — the threat budget grows every wave.';
-  h.innerHTML=msg; h.style.display='block';
+  if(h.classList.contains('coach')){ h.classList.remove('coach'); hintCache=null; }
+  let msg='';
+  if(!ended&&!tutOpen&&wave<TOTAL_WAVES){
+    const a=ADVICE[Math.min(wave+1,8)], ok=a.done();
+    msg=`<span class="eye">Build order · before wave ${wave+1}${ok?' · <span class="ok">&#10003; done</span>':''}</span><b>${a.head}</b> — ${a.text}`;
+  }
+  if(msg===hintCache) return;
+  hintCache=msg; h.innerHTML=msg; h.style.display=msg?'block':'none';
+}
+
+/* ══════════════ leaderboard ══════════════
+   /api/scores is a Vercel function backed by Upstash Redis. If it is unreachable or has
+   no storage configured, scores fall back to a board kept on this device. */
+const LB_API='/api/scores', LOCAL_KEY='attacksurface.scores.v1';
+let submitted=false, lastRun=null;
+const scoreOf=(waves,kills)=>waves*1000+Math.min(kills,999);
+function localScores(){ try{ return JSON.parse(localStorage.getItem(LOCAL_KEY))||[]; }catch(e){ return []; } }
+function saveLocal(name,score){
+  const list=localScores(), ex=list.find(s=>s.name===name);
+  if(ex) ex.score=Math.max(ex.score,score); else list.push({name,score});
+  list.sort((a,b)=>b.score-a.score); list.length=Math.min(list.length,10);
+  try{ localStorage.setItem(LOCAL_KEY,JSON.stringify(list)); }catch(e){}
+  return list;
+}
+async function fetchBoard(post){
+  try{
+    const r=await fetch(LB_API,post?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(post)}:{cache:'no-store'});
+    if(r.ok){ const j=await r.json(); if(post) saveLocal(post.name,j.score); return {scores:j.scores||[],global:true}; }
+  }catch(e){}
+  return {scores:post?saveLocal(post.name,scoreOf(post.waves,post.kills)):localScores(),global:false};
+}
+function lbTable(res,limit){
+  const rows=res.scores.slice(0,limit||10);
+  const src=`<div class="lbsrc">${res.global?'Global leaderboard':'Saved on this device only — global board unavailable'}</div>`;
+  if(!rows.length) return `<div class="lbsrc">No scores yet — be the first.</div>`+src;
+  return `<table class="lbt"><tr><th>#</th><th>Operator</th><th>Waves</th><th>Score</th></tr>${
+    rows.map((s,i)=>`<tr class="${s.name===callsign?'me':''}"><td>${i+1}</td><td>${esc(s.name)}</td><td>${Math.floor(s.score/1000)}</td><td>${s.score}</td></tr>`).join('')
+  }</table>`+src;
+}
+async function submitScore(){
+  if(submitted||!lastRun||!callsign) return;
+  submitted=true;
+  document.getElementById('overlb').innerHTML='<div class="lbsrc">Submitting score…</div>';
+  const res=await fetchBoard({name:callsign,waves:lastRun.waves,kills:lastRun.kills});
+  const box=document.getElementById('overlb'); if(ended&&box) box.innerHTML=lbTable(res,5);
+}
+
+/* small modal for the leaderboard and the callsign editor */
+let modalOpen=false, modalPaused=false;
+function openModal(html){
+  modalOpen=true;
+  if(!paused&&!ended){ modalPaused=true; togglePause(); }
+  const el=document.getElementById('lbm');
+  el.innerHTML=`<div class="box">${html}</div>`; el.style.display='flex';
+  return el;
+}
+function closeModal(){
+  document.getElementById('lbm').style.display='none'; modalOpen=false;
+  if(modalPaused){ modalPaused=false; if(paused) togglePause(); }
+}
+async function showBoard(){
+  const el=openModal(`<div class="eyebrow">Hall of operators</div><h4>LEADERBOARD</h4>
+    <div id="lbbody"><div class="lbsrc">Loading…</div></div>
+    <div style="margin-top:12px"><button class="btn" id="lbclose">CLOSE</button></div>`);
+  el.querySelector('#lbclose').addEventListener('click',closeModal);
+  const res=await fetchBoard();
+  const body=document.getElementById('lbbody'); if(modalOpen&&body) body.innerHTML=lbTable(res);
+}
+function showCallsign(){
+  const el=openModal(`<div class="eyebrow">Operator</div><h4>CALLSIGN</h4>
+    <div class="lbsrc">Shown on the leaderboard next to your best score.</div>
+    ${nameField('csname',callsign)}
+    <div style="display:flex;gap:7px;margin-top:12px"><button class="btn" id="cssave" style="border-color:var(--ram);color:var(--ram)">SAVE</button><button class="btn" id="cscancel">CANCEL</button></div>`);
+  const save=()=>{ if(readName('csname',true)) closeModal(); };
+  el.querySelector('#cssave').addEventListener('click',save);
+  el.querySelector('#cscancel').addEventListener('click',closeModal);
+  const inp=el.querySelector('#csname');
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); save(); } });
+  inp.focus();
 }
 
 /* ══════════════ HUD ══════════════ */
@@ -752,9 +1090,11 @@ function updHUD(){
   document.getElementById('wavev').textContent=wave;
   document.getElementById('drain').style.display=attackers.some(a=>ATK[a.kind].drain)?'inline':'none';
   const p=document.getElementById('phase');
-  if(phase==='prep') p.textContent=`BUILD PHASE — ${Math.ceil(phaseT)}s`;
+  if(phase==='training') p.textContent='TRAINING — NO WAVES';
+  else if(phase==='prep') p.textContent=`BUILD PHASE — ${Math.ceil(phaseT)}s`;
   else if(phase==='rest') p.textContent=`WAVE ${wave+1} IN ${Math.ceil(phaseT)}s`;
   else p.textContent=`HOSTILE: ${queue.length+attackers.length}`;
+  updHint();
 }
 function refreshCards(){
   const nw=now();
@@ -768,16 +1108,28 @@ function refreshCards(){
 
 /* ══════════════ end ══════════════ */
 function finish(won){
-  ended=true; overEl.style.display='flex';
-  overEl.innerHTML=`<h2 style="color:${won?'#4ade80':'#f87171'}">${won?'SYSTEM SECURE':'SYSTEM COMPROMISED'}</h2>
+  ended=true; overEl.style.display='flex'; closeCtl(); setSell(false); updHint();
+  const waves=won?TOTAL_WAVES:Math.max(0,wave-1);
+  lastRun={waves,kills:stats.killed};
+  overEl.innerHTML=`<div style="margin:auto 0"><h2 style="color:${won?'#4ade80':'#f87171'}">${won?'SYSTEM SECURE':'SYSTEM COMPROMISED'}</h2>
+    <div class="score">SCORE ${scoreOf(waves,stats.killed)}</div>
     <div class="lines">
-      WAVES SURVIVED &nbsp;${won?TOTAL_WAVES:Math.max(0,wave-1)} / ${TOTAL_WAVES}<br>
+      WAVES SURVIVED &nbsp;${waves} / ${TOTAL_WAVES}<br>
       THREATS NEUTRALISED &nbsp;${stats.killed}<br>
       CONTROLS LOST &nbsp;${stats.lost} &nbsp;·&nbsp; ACCOUNTS TAKEN OVER &nbsp;${stats.owned}<br>
       RAM COLLECTED &nbsp;${stats.ramEarned} &nbsp;·&nbsp; MINED AWAY &nbsp;${Math.round(stats.drained)}<br>
       LANE BREACHES &nbsp;${stats.breaches}
-    </div><button class="btn" id="again">REBUILD ENVIRONMENT</button>`;
+    </div>
+    <div id="overlb" style="margin:0 auto 12px;max-width:340px">${callsign?'':`<div class="lbsrc">Add a callsign to post this score to the leaderboard.</div>
+      ${nameField('overname','')}<button class="btn" id="oversub" style="margin-top:6px">SUBMIT SCORE</button>`}</div>
+    <button class="btn" id="again">REBUILD ENVIRONMENT</button></div>`;
   document.getElementById('again').addEventListener('click',reset);
+  if(callsign) submitScore();
+  else{
+    const go=()=>{ if(readName('overname',true)) submitScore(); };
+    document.getElementById('oversub').addEventListener('click',go);
+    document.getElementById('overname').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } });
+  }
   beep(won?880:110,.4,won?'sine':'sawtooth',.07);
 }
 
@@ -785,13 +1137,13 @@ function finish(won){
 function reset(){
   [...defenders,...attackers,...projectiles,...tokens].forEach(e=>e.el&&e.el.remove());
   defenders.length=0;attackers.length=0;projectiles.length=0;tokens.length=0;
-  ram=START_RAM;wave=0;phase='prep';phaseT=PREP_TIME;
+  ram=START_RAM;wave=0;phase='prep';phaseT=PREP_TIME;training=false;tStep=-1;tAdvanceAt=0;
   selected=null;sellMode=false;paused=false;ended=false;
   dropT=DROP_EVERY;queue=[];spawnT=0;spawnGap=2.2;rails={};
-  stats={killed:0,lost:0,ramEarned:0,waves:0,owned:0,drained:0,breaches:0};
+  stats={killed:0,lost:0,ramEarned:0,waves:0,owned:0,drained:0,breaches:0,sold:0,tokens:0};
   ORDER.forEach(k=>cooldowns[k]=0);
-  overEl.style.display='none';
-  document.getElementById('sellbtn').classList.remove('on');
+  overEl.style.display='none'; submitted=false; picked=null;
+  setSell(false); clearCoachMarks();
   document.getElementById('pausebtn').innerHTML='PAUSE<span class="kb"> [P]</span>';
   buildBoard(); updHUD(); refreshCards(); updHint(); last=0;
   if(!raf) raf=requestAnimationFrame(tick);
@@ -814,6 +1166,8 @@ function togglePlaybook(){
 document.getElementById('pausebtn').addEventListener('click',togglePause);
 document.getElementById('sellbtn').addEventListener('click',toggleSell);
 document.getElementById('helpbtn').addEventListener('click',()=>{ if(!tutOpen) showTut(); });
+document.getElementById('lbbtn').addEventListener('click',()=>{ if(!modalOpen) showBoard(); });
+document.getElementById('opbtn').addEventListener('click',()=>{ if(!modalOpen) showCallsign(); });
 document.getElementById('pbbtn').addEventListener('click',togglePlaybook);
 document.getElementById('mutebtn').addEventListener('click',e=>{
   muted=!muted; e.target.textContent=muted?'SOUND OFF':'SOUND ON';
@@ -822,23 +1176,29 @@ document.getElementById('brbtn').addEventListener('click',e=>{
   briefings=!briefings; e.target.textContent=briefings?'BRIEFINGS ON':'BRIEFINGS OFF';
 });
 document.addEventListener('keydown',e=>{
-  if(tutOpen){ if(e.key===' '||e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); closeTut(); } return; }
+  if(e.target&&e.target.tagName==='INPUT') return;   // typing a callsign must not fire hotkeys
+  if(modalOpen){ if(e.key==='Escape') closeModal(); return; }
+  if(tutOpen){
+    if(e.key==='Escape'){ e.preventDefault(); closeTut('skip'); }
+    else if(e.key==='Enter'){ e.preventDefault(); closeTut(runActive()||training?'skip':'train'); }
+    return;
+  }
   if(intelOpen){ if(e.key===' '||e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); closeIntel(); } return; }
   const i=['1','2','3','4','5','6','7','8'].indexOf(e.key);
   if(i>-1) select(ORDER[i]);
   else if(e.key==='s'||e.key==='S') toggleSell();
   else if(e.key==='p'||e.key==='P') togglePause();
   else if(e.key==='h'||e.key==='H'||e.key==='?') togglePlaybook();
-  else if(e.key==='Escape'){ selected=null;sellMode=false;
-    document.getElementById('sellbtn').classList.remove('on'); refreshCards(); }
+  else if(e.key==='Escape'){ selected=null; setSell(false); closeCtl(); refreshCards(); }
 });
-document.addEventListener('visibilitychange',()=>{ if(document.hidden&&!paused&&!ended&&!intelOpen&&!tutOpen) togglePause(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&!paused&&!ended&&!intelOpen&&!tutOpen&&!modalOpen) togglePause(); });
 
 /* Re-project every positioned element after an orientation flip. */
 function relayout(){
   board.querySelectorAll('.cell').forEach(d=>place(d,+d.dataset.c*PITCH,+d.dataset.r*PITCH));
   board.querySelectorAll('.rail').forEach(d=>place(d,0,+d.dataset.r*PITCH));
   [...defenders,...attackers,...projectiles,...tokens].forEach(o=>place(o.el,o.x,o.y));
+  if(ghostEl) place(ghostEl,ghostCell.x,ghostCell.y);
 }
 function fit(){
   const stage=document.getElementById('stage');
@@ -981,14 +1341,14 @@ the eighth. That is why "we bought a firewall" is not a security programme.
 <ul>
 <li><b>Every lane has one auto-remediation charge</b> — the green bar on the left edge. It clears the lane once, then goes red. A second breach there ends the run. <span class="k">Rebuild a spent lane before an untouched one.</span></li>
 <li><b>Centre lanes first.</b> A centre Honeypot pulls from the rows above and below; an edge one only pulls from one side.</li>
-<li><b>Sell (S) refunds 50%.</b> Converting Nodes into Firewalls around wave 11 is usually correct — economy stops mattering once you have enough.</li>
+<li><b>Sell refunds 50%.</b> Tap a placed control and press SELL, or use sell mode (<code>S</code>) to sell several in a row. Converting Nodes into Firewalls around wave 11 is usually correct — economy stops mattering once you have enough.</li>
 <li><b>A red-flagged control is compromised, not destroyed.</b> Click it to remediate. It earns and acts nothing until you do.</li>
 <li><b>Spend during breathers.</b> 12 seconds and +25 RAM between waves; a line left unchanged for three waves is already behind the threat curve.</li>
 <li><b>Hotkeys:</b> <code>1&#8211;8</code> select · <code>S</code> sell · <code>P</code> pause · <code>H</code> playbook · <code>Esc</code> cancel.</li>
 </ul>`;
 
 if(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches) document.body.classList.add('touch');
-buildCards(); reset(); fit();
+buildCards(); setCallsign(callsign); reset(); fit();
 if(!seenTut()) showTut(); else updHint();
 })();
 </script>
